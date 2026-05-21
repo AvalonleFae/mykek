@@ -18,6 +18,7 @@ import pelangganProfileRoutes from './routes/pelanggan/profile.js';
 import peniagaBusinessInfoRoutes from './routes/peniaga/businessInfo.js';
 import publicRoutes from './routes/public.js';
 import pelangganImageRoutes from './routes/pelanggan/image.js';
+import pelangganChatbotRoutes from './routes/pelanggan/chatbot.js';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use('/api/pelanggan/tempahan', pelangganOrderRoutes);
 app.use('/api/pelanggan/profil', pelangganProfileRoutes);
 app.use('/api/peniaga/profil-perniagaan', peniagaBusinessInfoRoutes);
 app.use('/api/awam', publicRoutes);
+app.use('/api/pelanggan/chatbot', pelangganChatbotRoutes);
 
 // --- Health check route ---
 app.get('/api/health', (req, res) => {

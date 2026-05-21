@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../../components/Header'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import useFormPersistence from '../../hooks/useFormPersistence'
 import api from '../../services/api'
+
+const ChatWidget = lazy(() => import('../../components/Chatbot/ChatWidget'))
 
 const INITIAL_FORM = {
   selections: {},
@@ -96,9 +98,9 @@ export default function OrderFormPage() {
     setGeneratingImage(true)
     try {
       const res = await api.post('/api/pelanggan/tempahan/jana-imej', {
-        prompt: form.aiPrompt,
+        penerangan: form.aiPrompt,
       })
-      const imageUrl = res.data.data?.url || res.data.url || res.data.data?.imageUrl || ''
+      const imageUrl = res.data.imageUrl || res.data.data?.imageUrl || ''
       setForm((prev) => ({ ...prev, aiImageUrl: imageUrl }))
     } catch (err) {
       setError(err.response?.data?.mesej || 'Gagal menjana imej. Sila cuba lagi.')
@@ -213,6 +215,13 @@ export default function OrderFormPage() {
   }
 
   const total = calculateTotal()
+
+  // Handle chatbot form actions (selecting options)
+  const handleChatbotFormAction = (action) => {
+    if (action && action.jenis === 'pilih_opsyen' && action.kategoriId && action.pilihanId) {
+      handleSelectionChange(action.kategoriId, action.pilihanId)
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -466,6 +475,15 @@ export default function OrderFormPage() {
           </div>
         </div>
       </main>
+
+      {/* Chatbot Widget - Lazy loaded */}
+      <Suspense fallback={null}>
+        <ChatWidget
+          formState={form}
+          categories={categories}
+          onFormAction={handleChatbotFormAction}
+        />
+      </Suspense>
     </div>
   )
 }

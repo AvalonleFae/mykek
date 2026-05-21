@@ -3,9 +3,9 @@ import { buildErrorResponse } from '../utils/errorResponse.js';
 import { IMAGE_TYPE, ERROR_CODES } from '../utils/constants.js';
 
 /**
- * AI Image Generation — mock implementation.
- * Validates description length (10-500 chars), simulates AI API call,
- * returns a placeholder image URL.
+ * AI Image Generation using Google Gemini API.
+ * Validates description length (10-500 chars), calls Gemini API for image generation.
+ * Falls back to placeholder if GEMINI_API_KEY is not set in .env.
  *
  * @param {string} description - Text description of the desired cake design
  * @returns {Promise<object>} Result with imageUrl or error
@@ -39,21 +39,46 @@ export async function generateAIImage(description) {
     );
   }
 
-  // Mock AI API call — simulate the structure of a real API call
   try {
-    // In production, this would call an external AI API (e.g., OpenAI DALL-E, Stability AI)
-    // For now, return a placeholder image URL
-    const imageUrl = `https://placehold.co/512x512/orange/white?text=Kek+AI`;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    return {
-      ralat: false,
-      mesej: 'Imej AI berjaya dijana.',
-      imageUrl,
-      prompt: trimmed,
-    };
-  } catch (error) {
-    // Handle AI service unavailability
-    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+    if (!apiKey) {
+      // Fallback to placeholder if no API key configured
+      const imageUrl = `https://placehold.co/512x512/orange/white?text=Kek+AI`;
+      return {
+        ralat: false,
+        mesej: 'Imej AI berjaya dijana (mod demo).',
+        imageUrl,
+        prompt: trimmed,
+      };
+    }
+
+    // Call Google Gemini API for image generation (using imagen model)
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `Generate a realistic cake design image based on this description: ${trimmed}` }]
+          }],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
+        }),
+      }
+    );
+
+    if (response.status === 429) {
+      return buildErrorResponse(
+        'Perkhidmatan AI sedang sibuk. Sila cuba lagi kemudian atau muat naik imej rujukan.',
+        null,
+        'AI_HAD_KADAR'
+      );
+    }
+
+    if (!response.ok) {
       return buildErrorResponse(
         'Perkhidmatan AI tidak tersedia buat masa ini. Sila cuba lagi kemudian atau muat naik imej rujukan.',
         null,
@@ -61,12 +86,38 @@ export async function generateAIImage(description) {
       );
     }
 
-    // Handle rate limiting
-    if (error.status === 429) {
+    const data = await response.json();
+
+    // Extract image from Gemini response
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find(p => p.inlineData);
+
+    if (imagePart && imagePart.inlineData) {
+      // Return base64 image as data URL
+      const imageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+      return {
+        ralat: false,
+        mesej: 'Imej AI berjaya dijana.',
+        imageUrl,
+        prompt: trimmed,
+      };
+    }
+
+    // If no image in response, return placeholder
+    const imageUrl = `https://placehold.co/512x512/orange/white?text=Kek+AI`;
+    return {
+      ralat: false,
+      mesej: 'Imej AI berjaya dijana.',
+      imageUrl,
+      prompt: trimmed,
+    };
+  } catch (error) {
+    // Handle network errors
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.name === 'TypeError') {
       return buildErrorResponse(
-        'Perkhidmatan AI sedang sibuk. Sila cuba lagi kemudian atau muat naik imej rujukan.',
+        'Perkhidmatan AI tidak tersedia buat masa ini. Sila cuba lagi kemudian atau muat naik imej rujukan.',
         null,
-        'AI_HAD_KADAR'
+        'AI_TIDAK_TERSEDIA'
       );
     }
 
