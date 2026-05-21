@@ -30,8 +30,7 @@ export const DELIVERY_METHOD = Object.freeze({
 
 // Payment Method ENUM values
 export const PAYMENT_METHOD = Object.freeze({
-  TUNAI: 'Tunai',
-  PINDAHAN_BANK: 'Pindahan Bank',
+  QR_CODE: 'QR Code',
 });
 
 // Image Type ENUM values

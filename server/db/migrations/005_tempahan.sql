@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS Tempahan (
   tarikhAmbil DATE NOT NULL,
   kaedahPenghantaran ENUM('Ambil Sendiri','Penghantaran') NOT NULL,
   alamatPenghantaran VARCHAR(255),
-  kaedahBayaran ENUM('Tunai','Pindahan Bank') NOT NULL,
+  kaedahBayaran ENUM('QR Code') NOT NULL DEFAULT 'QR Code',
   jumlahHarga DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   statusTempahan ENUM('Menunggu Pengesahan','Diterima','Ditolak','Dibatalkan','Sedang Diproses','Sedang Dihias','Sedia untuk Diambil/Dihantar','Selesai') NOT NULL DEFAULT 'Menunggu Pengesahan',
   statusBayaran ENUM('Belum Dibayar','Deposit Dibayar','Telah Dibayar') NOT NULL DEFAULT 'Belum Dibayar',

@@ -147,6 +147,7 @@ graph LR
 | `<OrderList>` | Customer's order history |
 | `<OrderDetail>` | Full order details with status |
 | `<CancelOrderButton>` | Conditional cancel with confirmation |
+| `<QRPaymentPage>` | Displays QR code for payment with "Sudah Bayar" button, redirects to order status |
 
 #### Merchant Components
 
@@ -366,7 +367,7 @@ ENUM('Belum Dibayar', 'Deposit Dibayar', 'Telah Dibayar')
 ENUM('Ambil Sendiri', 'Penghantaran')
 
 -- Payment Method
-ENUM('Tunai', 'Pindahan Bank')
+ENUM('QR Code')
 
 -- Image Type
 ENUM('AI', 'Muat Naik')
