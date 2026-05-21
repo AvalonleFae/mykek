@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Header from '../../components/Header'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import SuccessMessage from '../../components/shared/SuccessMessage'
@@ -66,88 +65,133 @@ export default function ProfilePage() {
     }
   }
 
+  const handleCancel = () => {
+    setForm({ nama: profile.nama || '', alamat: profile.alamat || '' })
+    setError('')
+    setSuccess('')
+    navigate('/pelanggan')
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-1 p-6 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
-        <div className="max-w-lg mx-auto">
-          {/* Back button */}
+      {/* Header with back arrow and Profil badge */}
+      <header className="bg-white px-4 py-3 flex items-center justify-between border-b shadow-sm">
+        <div className="flex items-center gap-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="w-7 h-7 text-orange-500"
+          >
+            <path d="M12 2L2 19h20L12 2z" />
+          </svg>
+          <span className="text-lg font-bold text-gray-800">MyKek</span>
           <button
             onClick={() => navigate('/pelanggan')}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500 mb-6 transition-colors"
+            className="ml-2 text-gray-600 hover:text-orange-500 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
-            Kembali ke Menu Utama
           </button>
+        </div>
+        <span className="px-4 py-1.5 bg-orange-500 text-white text-sm font-medium rounded-full">
+          Profil
+        </span>
+      </header>
 
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h1 className="text-xl font-bold text-gray-800 mb-6">Profil Saya</h1>
+      <main className="flex-1" style={{ backgroundColor: '#FFF5EE' }}>
+        <div className="max-w-lg mx-auto px-4 py-6">
+          {loading ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              {/* Avatar Section */}
+              <div className="bg-orange-100 rounded-t-2xl py-8 flex justify-center">
+                <div className="w-20 h-20 rounded-full border-2 border-orange-300 flex items-center justify-center bg-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-12 h-12 text-orange-300">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                </div>
+              </div>
 
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <>
+              {/* Form Section */}
+              <div className="bg-white rounded-b-2xl shadow-md px-6 py-6">
                 {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
                 {success && <div className="mb-4"><SuccessMessage message={success} /></div>}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Phone (read-only) */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      No. Telefon
-                    </label>
-                    <input
-                      type="text"
-                      value={profile.noTelefon || ''}
-                      disabled
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-full text-sm bg-gray-100 text-gray-500 cursor-not-allowed"
-                    />
-                  </div>
-
+                <form onSubmit={handleSubmit} className="space-y-5">
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Nama
+                      Nama Penuh
                     </label>
                     <input
                       type="text"
                       value={form.nama}
                       onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
                       required
                     />
-                    <p className="text-xs text-gray-400 mt-1">2-100 aksara</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Nama ini akan digunakan untuk label tempahan.
+                    </p>
+                  </div>
+
+                  {/* Phone (read-only) */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      No Telefon
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.noTelefon || ''}
+                      disabled
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Nombor telefon ini akan digunakan untuk log masuk dan mesej peniaga.
+                    </p>
                   </div>
 
                   {/* Address */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Alamat
+                      Alamat Rumah
                     </label>
                     <textarea
                       value={form.alamat}
                       onChange={(e) => setForm({ ...form, alamat: e.target.value })}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
+                      rows={4}
+                      placeholder="No 123, Jalan Baru, Sarawak"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Maksimum 500 aksara ({form.alamat.length}/500)</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Alamat ini akan menjadi alamat asal untuk penghantaran kek.
+                    </p>
                   </div>
 
-                  {/* Submit */}
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full transition-colors text-sm"
-                  >
-                    {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </button>
+                  {/* Buttons */}
+                  <div className="flex gap-4 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-lg text-sm transition-colors"
+                    >
+                      {saving ? 'Menyimpan...' : 'Simpan'}
+                    </button>
+                  </div>
                 </form>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </main>
     </div>
