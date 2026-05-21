@@ -2,33 +2,34 @@
 
 ## Overview
 
-This implementation plan breaks down the MyKek cake ordering system into incremental coding tasks. The system uses Vite + React (JSX) frontend with Tailwind CSS, Node.js + Express backend, MariaDB database with Knex.js query builder, and fast-check for property-based testing. All user-facing text is in Bahasa Melayu. Each task builds on previous tasks, ensuring no orphaned code.
+This implementation plan breaks down the MyKek cake ordering system into incremental coding tasks. The system uses Vite + React (JSX) frontend with Tailwind CSS, Node.js + Express backend, MariaDB database with raw mysql2 parameterized queries, and fast-check for property-based testing. All user-facing text is in Bahasa Melayu. Each task builds on previous tasks, ensuring no orphaned code.
 
 ## Tasks
 
-- [ ] 1. Set up project structure, database schema, and core configuration
-  - [ ] 1.1 Initialize project structure with Vite React frontend and Express backend
+- [x] 1. Set up project structure, database schema, and core configuration
+  - [x] 1.1 Initialize project structure with Vite React frontend and Express backend
     - Create monorepo structure with `client/` (Vite + React) and `server/` directories
     - Configure Vite with React and Tailwind CSS
     - Set up Express server with basic middleware (cors, body-parser, express-session)
-    - Configure Knex.js connection to MariaDB
+    - Configure mysql2 connection pool to MariaDB
     - Set up Vitest configuration for both client and server
-    - Install dependencies: axios, react-router-dom, tailwindcss, express, knex, mysql2, express-session, express-mysql-session, bcrypt, multer, fast-check, supertest
+    - Install dependencies: axios, react-router-dom, tailwindcss, express, mysql2, express-session, express-mysql-session, bcrypt, multer, fast-check, supertest
     - _Requirements: 17.1_
 
-  - [ ] 1.2 Create database migration files and seed data
-    - Write Knex migration for `Pelanggan` table (pelangganId, noTelefon, nama, alamat, tarikhDaftar)
-    - Write Knex migration for `Peniaga` table (peniagaId, namaPenggunaAdmin, kataLaluan, namaKedai, noTelefonKedai, peneranganKedai, tarikhKemaskini)
-    - Write Knex migration for `KategoriSpesifikasiKek` table (kategoriId, nama, penerangan, aktif, tarikhCipta)
-    - Write Knex migration for `PilihanSpesifikasiKek` table (pilihanId, kategoriId FK, nama, penerangan, hargaTambahan, aktif, tarikhCipta)
-    - Write Knex migration for `Tempahan` table with all ENUM columns (statusTempahan, statusBayaran, kaedahPenghantaran, kaedahBayaran)
-    - Write Knex migration for `ButiranTempahan` table (denormalized with namaKategori, namaPilihan, hargaTambahan)
-    - Write Knex migration for `ImejTempahan` table (imejId, tempahanId FK, jenisImej ENUM, urlImej, promptAI, tarikhMuatNaik)
-    - Write Knex migration for `TarikhTutup` table (tarikhTutupId, tarikh UNIQUE, catatan, tarikhCipta)
-    - Write seed file for default Merchant account (hashed password)
+  - [x] 1.2 Create database migration SQL files and seed data
+    - Write SQL migration for `Pelanggan` table (pelangganId, noTelefon, nama, alamat, tarikhDaftar)
+    - Write SQL migration for `Peniaga` table (peniagaId, namaPenggunaAdmin, kataLaluan, namaKedai, noTelefonKedai, peneranganKedai, tarikhKemaskini)
+    - Write SQL migration for `KategoriSpesifikasiKek` table (kategoriId, nama, penerangan, aktif, tarikhCipta)
+    - Write SQL migration for `PilihanSpesifikasiKek` table (pilihanId, kategoriId FK, nama, penerangan, hargaTambahan, aktif, tarikhCipta)
+    - Write SQL migration for `Tempahan` table with all ENUM columns (statusTempahan, statusBayaran, kaedahPenghantaran, kaedahBayaran)
+    - Write SQL migration for `ButiranTempahan` table (denormalized with namaKategori, namaPilihan, hargaTambahan)
+    - Write SQL migration for `ImejTempahan` table (imejId, tempahanId FK, jenisImej ENUM, urlImej, promptAI, tarikhMuatNaik)
+    - Write SQL migration for `TarikhTutup` table (tarikhTutupId, tarikh UNIQUE, catatan, tarikhCipta)
+    - Write seed SQL file for default Merchant account (hashed password)
+    - Create a `db/migrate.js` script that runs all SQL migration files in order using mysql2
     - _Requirements: 1.1, 9.1, 13.1, 13.2, 14.1_
 
-  - [ ] 1.3 Create shared validation utilities and constants
+  - [x] 1.3 Create shared validation utilities and constants
     - Create validation functions: phone number format (10-11 digits starting with "01"), name length (1-100 chars), address length (≤500 chars), price range (RM 0.00-9999.99)
     - Define ENUM constants for Order_Status, Payment_Status, Delivery_Method, Payment_Method, Image_Type
     - Create error code constants (e.g., PENDAFTARAN_DUPLIKAT, FORMAT_TIDAK_SAH)
@@ -40,14 +41,14 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 3: Profile data validation**
     - **Validates: Requirements 1.1, 1.2, 1.3, 3.1, 3.3**
 
-- [ ] 2. Implement authentication system
-  - [ ] 2.1 Implement customer registration endpoint and service
+- [x] 2. Implement authentication system
+  - [x] 2.1 Implement customer registration endpoint and service
     - Create `POST /api/auth/pelanggan/daftar` route
     - Implement `AuthService.registerCustomer()` with phone format validation, duplicate check, and database insert
     - Return structured error responses for invalid input or duplicate phone
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-  - [ ] 2.2 Implement customer login and session management
+  - [x] 2.2 Implement customer login and session management
     - Create `POST /api/auth/pelanggan/log-masuk` route
     - Implement `AuthService.loginCustomer()` with phone lookup and session creation
     - Configure express-session with MariaDB session store (express-mysql-session)
@@ -59,7 +60,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 2: Customer login validation**
     - **Validates: Requirements 2.1, 2.2, 2.3**
 
-  - [ ] 2.4 Implement merchant login with lockout mechanism
+  - [x] 2.4 Implement merchant login with lockout mechanism
     - Create `POST /api/auth/peniaga/log-masuk` route
     - Implement `AuthService.loginMerchant()` with bcrypt password comparison
     - Implement `AuthService.checkLoginAttempts()` — track failed attempts per username, lock after 5 consecutive failures for 15 minutes
@@ -72,7 +73,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 20: Password storage irreversibility**
     - **Validates: Requirements 9.4, 18.3**
 
-  - [ ] 2.6 Implement authentication and role-based access middleware
+  - [x] 2.6 Implement authentication and role-based access middleware
     - Create `authMiddleware` to check valid session exists
     - Create `roleGuard('pelanggan')` and `roleGuard('peniaga')` middleware
     - Return 401 for unauthenticated requests, 403 for wrong-role requests
@@ -83,10 +84,10 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 19: Role-based access control**
     - **Validates: Requirements 18.1, 18.2, 18.5**
 
-- [ ] 3. Checkpoint - Ensure all tests pass
+- [x] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement cake specification management (Merchant)
+- [~] 4. Implement cake specification management (Merchant)
   - [ ] 4.1 Implement cake spec category CRUD endpoints
     - Create `GET /api/peniaga/kategori-spesifikasi` — list all categories (active and inactive)
     - Create `POST /api/peniaga/kategori-spesifikasi` — create category with name/description validation and uniqueness check
@@ -116,7 +117,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 4: Only active specifications appear in order form**
     - **Validates: Requirements 4.1**
 
-- [ ] 5. Implement unavailability calendar management
+- [~] 5. Implement unavailability calendar management
   - [ ] 5.1 Implement closed date CRUD endpoints
     - Create `GET /api/peniaga/tarikh-tutup` — list all closed dates
     - Create `POST /api/peniaga/tarikh-tutup` — add closed date with validation (future/today only, not already closed)
@@ -130,7 +131,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 17: Closed date round-trip**
     - **Validates: Requirements 14.1, 14.2, 14.4, 14.6**
 
-- [ ] 6. Implement order placement and management
+- [~] 6. Implement order placement and management
   - [ ] 6.1 Implement order creation endpoint and service
     - Create `POST /api/pelanggan/tempahan` route
     - Implement `OrderService.createOrder()` with validation: all required categories selected, valid date (not closed, ≥2 days future), delivery method, payment method, address if delivery
@@ -192,7 +193,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
 - [ ] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement image handling (AI generation and upload)
+- [~] 8. Implement image handling (AI generation and upload)
   - [ ] 8.1 Implement AI image generation endpoint
     - Create `POST /api/pelanggan/tempahan/jana-imej` route
     - Implement `ImageService.generateAIImage()` — validate description length (10-500 chars), call external AI API, return generated image URL
@@ -215,7 +216,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Property 9: Image replacement invariant**
     - **Validates: Requirements 6.2, 6.4**
 
-- [ ] 9. Implement customer profile and business info management
+- [~] 9. Implement customer profile and business info management
   - [ ] 9.1 Implement customer profile endpoints
     - Create `GET /api/pelanggan/profil` — return authenticated customer's profile
     - Create `PUT /api/pelanggan/profil` — update name (2-100 chars) and address (≤500 chars) with validation
@@ -227,7 +228,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - Create `GET /api/awam/profil-kedai` — public endpoint for customer-facing shop info
     - _Requirements: 16.1, 16.2, 16.3, 16.4_
 
-- [ ] 10. Implement sales report generation
+- [~] 10. Implement sales report generation
   - [ ] 10.1 Implement sales report endpoint and PDF generation
     - Create `GET /api/peniaga/laporan-jualan` — accept month/year params, return totalOrders, totalRevenue, statusBreakdown, paymentBreakdown
     - Implement `ReportService.getSalesReport()` with aggregation queries
@@ -242,7 +243,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
 - [ ] 11. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement React frontend - shared components and routing
+- [~] 12. Implement React frontend - shared components and routing
   - [ ] 12.1 Set up React Router with protected routes and auth context
     - Configure React Router with route groups: `/pelanggan/*` and `/peniaga/*`
     - Implement `AuthContext` with useReducer for session state management
@@ -257,7 +258,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - Create API service layer with Axios instance, interceptors for retry logic (3 retries, 3s interval), and 401/403 handling
     - _Requirements: 17.2, 17.3, 19.1_
 
-- [ ] 13. Implement React frontend - customer pages
+- [~] 13. Implement React frontend - customer pages
   - [ ] 13.1 Build customer registration and login pages
     - Create `<RegisterForm>` with phone validation (Malaysian format) and name input
     - Create `<LoginForm>` with phone number input and error display
@@ -304,7 +305,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - Handle empty order list state
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 14. Implement React frontend - merchant pages
+- [~] 14. Implement React frontend - merchant pages
   - [ ] 14.1 Build merchant login page
     - Create `<MerchantLoginForm>` with username/password fields
     - Display generic error for invalid credentials
@@ -353,7 +354,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
 - [ ] 15. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 16. Integration wiring and final verification
+- [~] 16. Integration wiring and final verification
   - [ ] 16.1 Wire all frontend pages to backend API and verify end-to-end flows
     - Ensure all customer flows work: register → login → place order → track → cancel
     - Ensure all merchant flows work: login → manage orders → update status → manage specs → reports
@@ -379,7 +380,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
 - Property tests validate universal correctness properties from the design document
 - Unit tests validate specific examples and edge cases
 - All user-facing text must be in Bahasa Melayu
-- The backend uses Knex.js query builder (not a full ORM) for SQL flexibility
+- The backend uses raw mysql2 parameterized queries for SQL flexibility and injection prevention
 - Images are stored locally under `/uploads/images/` with URLs in the database
 - Sessions are stored in MariaDB via express-mysql-session for persistence
 
