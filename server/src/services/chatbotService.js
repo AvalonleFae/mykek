@@ -9,11 +9,53 @@ import { buildPrompt } from './promptBuilder.js';
 import { validateResponse, FALLBACK_RESPONSE } from './responseValidator.js';
 
 const GEMINI_TIMEOUT = 30000; // 30 seconds
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-2.5-flash';
 
 // Rate limiting: in-memory map keyed by session ID
 const sessionMessageCounts = new Map();
 const MAX_MESSAGES_PER_SESSION = 20;
+
+// Global rate limiter for Gemini API calls (chatbot)
+const chatRateLimiter = {
+  lastRequestTime: 0,
+  minIntervalMs: 5000, // 5 seconds between requests
+  requestsThisMinute: 0,
+  minuteStart: 0,
+  maxPerMinute: 10,
+};
+
+function checkChatRateLimit() {
+  const now = Date.now();
+
+  // Reset minute counter
+  if (now - chatRateLimiter.minuteStart > 60000) {
+    chatRateLimiter.requestsThisMinute = 0;
+    chatRateLimiter.minuteStart = now;
+  }
+
+  // Check per-minute limit
+  if (chatRateLimiter.requestsThisMinute >= chatRateLimiter.maxPerMinute) {
+    const waitSeconds = Math.ceil((60000 - (now - chatRateLimiter.minuteStart)) / 1000);
+    return { allowed: false, waitSeconds };
+  }
+
+  // Check minimum interval
+  const elapsed = now - chatRateLimiter.lastRequestTime;
+  if (elapsed < chatRateLimiter.minIntervalMs) {
+    const waitSeconds = Math.ceil((chatRateLimiter.minIntervalMs - elapsed) / 1000);
+    return { allowed: false, waitSeconds };
+  }
+
+  return { allowed: true };
+}
+
+function recordChatRequest() {
+  chatRateLimiter.lastRequestTime = Date.now();
+  chatRateLimiter.requestsThisMinute += 1;
+  if (chatRateLimiter.minuteStart === 0) {
+    chatRateLimiter.minuteStart = Date.now();
+  }
+}
 
 // Fallback response when service is unavailable
 const UNAVAILABLE_RESPONSE = {
@@ -53,7 +95,7 @@ export async function processMessage({ mesej, sejarah, konteksBoring, pelangganI
   }
 
   // Check API key
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_CHATBOT_API_KEY;
   if (!apiKey || apiKey.trim() === '') {
     return NO_API_KEY_RESPONSE;
   }
@@ -77,6 +119,18 @@ export async function processMessage({ mesej, sejarah, konteksBoring, pelangganI
 
   // Call Gemini API with timeout
   try {
+    // Check rate limit before calling API
+    const rateCheck = checkChatRateLimit();
+    if (!rateCheck.allowed) {
+      return {
+        balasan: `Sila tunggu ${rateCheck.waitSeconds} saat sebelum menghantar mesej lagi.`,
+        cadangan: null,
+        tindakan: null,
+      };
+    }
+
+    recordChatRequest();
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: MODEL_NAME,

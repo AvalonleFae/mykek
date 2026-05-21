@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { puter } from '@heyputer/puter.js'
 import Header from '../../components/Header'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
@@ -97,13 +98,17 @@ export default function OrderFormPage() {
     setError('')
     setGeneratingImage(true)
     try {
-      const res = await api.post('/api/pelanggan/tempahan/jana-imej', {
-        penerangan: form.aiPrompt,
-      })
-      const imageUrl = res.data.imageUrl || res.data.data?.imageUrl || ''
+      // Use Puter.js for free image generation (no API key needed)
+      const imageElement = await puter.ai.txt2img(
+        `A realistic custom cake design: ${form.aiPrompt}`,
+        { model: 'gemini-2.5-flash-image' }
+      )
+      // imageElement is an <img> element, extract its src
+      const imageUrl = imageElement.src || imageElement.getAttribute('src')
       setForm((prev) => ({ ...prev, aiImageUrl: imageUrl }))
     } catch (err) {
-      setError(err.response?.data?.mesej || 'Gagal menjana imej. Sila cuba lagi.')
+      console.error('Puter.js image generation error:', err)
+      setError('Gagal menjana imej. Sila cuba lagi atau muat naik imej rujukan.')
     } finally {
       setGeneratingImage(false)
     }
