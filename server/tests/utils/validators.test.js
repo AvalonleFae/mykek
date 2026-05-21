@@ -248,8 +248,7 @@ describe('Constants', () => {
   });
 
   it('should have all Payment_Method values', () => {
-    expect(PAYMENT_METHOD.TUNAI).toBe('Tunai');
-    expect(PAYMENT_METHOD.PINDAHAN_BANK).toBe('Pindahan Bank');
+    expect(PAYMENT_METHOD.QR_CODE).toBe('QR Code');
   });
 
   it('should have all Image_Type values', () => {

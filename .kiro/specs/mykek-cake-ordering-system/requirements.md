@@ -65,8 +65,9 @@ MyKek is a web-based digital cake ordering system designed for Zuraida Patisseri
 3. WHEN a Customer selects "Penghantaran" (delivery) as the delivery method, THE System SHALL require the Customer to provide a delivery address (maximum 255 characters)
 4. THE System SHALL calculate and display the total price (jumlahHarga) in MYR as the sum of all additional prices from selected Cake_Spec_Options, updating the displayed total each time the Customer changes a selection
 5. IF a Customer selects a pickup/delivery date that falls on a Closed_Date or is earlier than 2 days from the current date, THEN THE System SHALL display a message indicating the date is unavailable and prevent order submission
-6. WHEN an Order is successfully placed, THE System SHALL display an order confirmation showing the order ID, selected cake specifications, pickup/delivery date, delivery method, delivery address (if applicable), total price, and payment method
-7. IF a Customer attempts to submit the order form without selecting an option from each required Cake_Spec_Category or without providing a pickup/delivery date, delivery method, or payment method, THEN THE System SHALL display a validation message indicating the missing fields and prevent order submission
+6. WHEN an Order is successfully placed, THE System SHALL display a QR code payment page showing the merchant's payment QR code, the total price, and a "Sudah Bayar" (Already Paid) button
+7. WHEN a Customer presses the "Sudah Bayar" button on the QR code payment page, THE System SHALL redirect the Customer to the order status page showing the newly created order with status "Menunggu Pengesahan"
+8. IF a Customer attempts to submit the order form without selecting an option from each required Cake_Spec_Category or without providing a pickup/delivery date, delivery method, or payment method, THEN THE System SHALL display a validation message indicating the missing fields and prevent order submission
 
 ### Requirement 5: AI Cake Image Generation
 
