@@ -25,7 +25,7 @@ Key design considerations:
 | PDF Generation | jsPDF + html2canvas |
 | Backend | Node.js + Express.js |
 | Database | MariaDB |
-| ORM | Knex.js (query builder) |
+| ORM | mysql2 (raw parameterized queries) |
 | Authentication | express-session + bcrypt |
 | File Upload | Multer |
 | AI Image | External AI API (e.g., OpenAI DALL-E or Stability AI) |
@@ -45,7 +45,7 @@ graph TB
         C[API Routes]
         D[Middleware Layer]
         E[Business Logic / Services]
-        F[Data Access Layer - Knex.js]
+        F[Data Access Layer - mysql2]
     end
 
     subgraph "External Services"
@@ -102,7 +102,7 @@ graph LR
         C --> D[Validation Middleware]
         D --> E[Controller]
         E --> F[Service Layer]
-        F --> G[Repository / Knex Queries]
+        F --> G[Repository / mysql2 Queries]
     end
 ```
 
@@ -110,7 +110,7 @@ graph LR
 
 1. **Session-based authentication** over JWT — Simpler for a single-server deployment, easier session invalidation, suitable for the scale of this application.
 2. **Server-side sessions with express-session** — Sessions stored in MariaDB via `express-mysql-session` for persistence across server restarts.
-3. **Knex.js query builder** over a full ORM — Provides SQL flexibility while preventing SQL injection, lighter weight than Sequelize/TypeORM for this project size.
+3. **Raw mysql2 queries** over a query builder or ORM — Direct SQL with parameterized queries provides full control, prevents SQL injection, and avoids abstraction overhead for this project size.
 4. **Local file storage** for uploaded images — Suitable for single-server deployment; images served via Express static middleware.
 5. **Axios interceptors** for retry logic — Handles offline resilience with automatic retry on network failures.
 6. **React Router** for SPA routing — Separate route groups for customer (`/pelanggan/*`) and merchant (`/peniaga/*`) interfaces.

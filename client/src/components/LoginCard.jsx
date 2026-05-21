@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 export default function LoginCard() {
   const [activeTab, setActiveTab] = useState('pelanggan') // 'pelanggan' or 'peniaga'
@@ -13,16 +15,54 @@ export default function LoginCard() {
   const [namaPengguna, setNamaPengguna] = useState('')
   const [kataLaluan, setKataLaluan] = useState('')
 
-  const handleCustomerSubmit = (e) => {
+  // UI state
+  const [error, setError] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { loginPelanggan, registerPelanggan, loginPeniaga } = useAuth()
+  const navigate = useNavigate()
+
+  const handleCustomerSubmit = async (e) => {
     e.preventDefault()
-    // Backend integration will be added later
-    console.log(isRegistering ? 'Daftar:' : 'Log Masuk:', { noTelefon, nama, alamat })
+    setError('')
+    setSuccessMsg('')
+    setIsLoading(true)
+
+    try {
+      if (isRegistering) {
+        await registerPelanggan({ noTelefon, nama, alamat })
+        setSuccessMsg('Pendaftaran berjaya! Sila log masuk.')
+        setIsRegistering(false)
+        setNama('')
+        setAlamat('')
+      } else {
+        await loginPelanggan(noTelefon)
+        navigate('/pelanggan')
+      }
+    } catch (err) {
+      const message = err.response?.data?.mesej || err.response?.data?.message || 'Ralat berlaku. Sila cuba lagi.'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleMerchantSubmit = (e) => {
+  const handleMerchantSubmit = async (e) => {
     e.preventDefault()
-    // Backend integration will be added later
-    console.log('Peniaga Log Masuk:', { namaPengguna, kataLaluan })
+    setError('')
+    setSuccessMsg('')
+    setIsLoading(true)
+
+    try {
+      await loginPeniaga(namaPengguna, kataLaluan)
+      navigate('/peniaga')
+    } catch (err) {
+      const message = err.response?.data?.mesej || err.response?.data?.message || 'Ralat berlaku. Sila cuba lagi.'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -37,6 +77,8 @@ export default function LoginCard() {
           onClick={() => {
             setActiveTab('pelanggan')
             setIsRegistering(false)
+            setError('')
+            setSuccessMsg('')
           }}
           className={`pb-1 text-sm font-medium transition-colors ${
             activeTab === 'pelanggan'
@@ -50,6 +92,8 @@ export default function LoginCard() {
           onClick={() => {
             setActiveTab('peniaga')
             setIsRegistering(false)
+            setError('')
+            setSuccessMsg('')
           }}
           className={`pb-1 text-sm font-medium transition-colors ${
             activeTab === 'peniaga'
@@ -60,6 +104,20 @@ export default function LoginCard() {
           Peniaga
         </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {successMsg && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+          {successMsg}
+        </div>
+      )}
 
       {/* Customer Tab */}
       {activeTab === 'pelanggan' && (
@@ -75,6 +133,7 @@ export default function LoginCard() {
               value={noTelefon}
               onChange={(e) => setNoTelefon(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+              required
             />
           </div>
 
@@ -91,6 +150,7 @@ export default function LoginCard() {
                   value={nama}
                   onChange={(e) => setNama(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                  required
                 />
               </div>
               <div>
@@ -103,6 +163,7 @@ export default function LoginCard() {
                   onChange={(e) => setAlamat(e.target.value)}
                   rows={2}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
+                  required
                 />
               </div>
             </>
@@ -111,7 +172,11 @@ export default function LoginCard() {
           {/* Toggle link */}
           <button
             type="button"
-            onClick={() => setIsRegistering(!isRegistering)}
+            onClick={() => {
+              setIsRegistering(!isRegistering)
+              setError('')
+              setSuccessMsg('')
+            }}
             className="text-xs text-orange-500 underline hover:text-orange-600"
           >
             {isRegistering ? 'Tekan sini untuk Log Masuk!' : 'Tekan sini untuk daftar!'}
@@ -120,9 +185,10 @@ export default function LoginCard() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm mt-2"
+            disabled={isLoading}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full transition-colors text-sm mt-2"
           >
-            {isRegistering ? 'Daftar' : 'Log Masuk'}
+            {isLoading ? 'Memproses...' : isRegistering ? 'Daftar' : 'Log Masuk'}
           </button>
         </form>
       )}
@@ -140,6 +206,7 @@ export default function LoginCard() {
               value={namaPengguna}
               onChange={(e) => setNamaPengguna(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+              required
             />
           </div>
           <div>
@@ -152,15 +219,17 @@ export default function LoginCard() {
               value={kataLaluan}
               onChange={(e) => setKataLaluan(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+              required
             />
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm mt-2"
+            disabled={isLoading}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full transition-colors text-sm mt-2"
           >
-            Log Masuk
+            {isLoading ? 'Memproses...' : 'Log Masuk'}
           </button>
         </form>
       )}
