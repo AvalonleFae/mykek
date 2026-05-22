@@ -16,7 +16,7 @@ router.use(authMiddleware, roleGuard('pelanggan'));
 router.post('/', async (req, res) => {
   try {
     const pelangganId = req.session.userId;
-    const { butiran, tarikhAmbil, kaedahPenghantaran, alamatPenghantaran, kaedahBayaran, nota } = req.body;
+    const { butiran, tarikhAmbil, kaedahPenghantaran, alamatPenghantaran, kaedahBayaran, nota, catatan } = req.body;
 
     const result = await createOrder({
       pelangganId,
@@ -25,10 +25,12 @@ router.post('/', async (req, res) => {
       kaedahPenghantaran,
       alamatPenghantaran,
       kaedahBayaran,
-      nota,
+      nota: nota || catatan,
     });
 
     if (result.ralat) {
+      console.log('Order creation rejected:', JSON.stringify(result));
+      console.log('Payload received:', JSON.stringify({ butiran, tarikhAmbil, kaedahPenghantaran }));
       return res.status(400).json(result);
     }
 
@@ -75,9 +77,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const pelangganId = req.session.userId;
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );
@@ -110,9 +112,9 @@ router.get('/:id', async (req, res) => {
 router.put('/:id/batal', async (req, res) => {
   try {
     const pelangganId = req.session.userId;
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );

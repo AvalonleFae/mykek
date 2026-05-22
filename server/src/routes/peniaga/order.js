@@ -53,9 +53,9 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );
@@ -87,9 +87,9 @@ router.get('/:id', async (req, res) => {
  */
 router.put('/:id/terima', async (req, res) => {
   try {
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );
@@ -117,9 +117,9 @@ router.put('/:id/terima', async (req, res) => {
  */
 router.put('/:id/tolak', async (req, res) => {
   try {
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );
@@ -148,9 +148,9 @@ router.put('/:id/tolak', async (req, res) => {
  */
 router.put('/:id/status', async (req, res) => {
   try {
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );
@@ -178,9 +178,9 @@ router.put('/:id/status', async (req, res) => {
  */
 router.put('/:id/status-bayaran', async (req, res) => {
   try {
-    const tempahanId = parseInt(req.params.id, 10);
+    const tempahanId = req.params.id;
 
-    if (isNaN(tempahanId)) {
+    if (!tempahanId || tempahanId.trim() === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH)
       );

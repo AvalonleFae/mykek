@@ -1,15 +1,15 @@
 import pool from '../config/db.js';
 import { buildErrorResponse } from '../utils/errorResponse.js';
 import { ORDER_STATUS, PAYMENT_STATUS, DELIVERY_METHOD, PAYMENT_METHOD, ERROR_CODES } from '../utils/constants.js';
+import { generateTempahanId, generateButiranId } from '../utils/idGenerator.js';
 
 /**
  * The fixed forward-only status transition sequence.
  */
 const STATUS_SEQUENCE = [
   ORDER_STATUS.DITERIMA,
-  ORDER_STATUS.SEDANG_DIPROSES,
-  ORDER_STATUS.SEDANG_DIHIAS,
-  ORDER_STATUS.SEDIA,
+  ORDER_STATUS.SEDANG_DIBUAT,
+  ORDER_STATUS.SIAP,
   ORDER_STATUS.SELESAI,
 ];
 
@@ -20,13 +20,18 @@ const STATUS_SEQUENCE = [
  */
 export async function getCustomerOrders(pelangganId) {
   const [rows] = await pool.execute(
-    `SELECT tempahanId, tarikhTempahan, statusTempahan, jumlahHarga, tarikhAmbil, kaedahPenghantaran, statusBayaran
-     FROM Tempahan
-     WHERE pelangganId = ?
-     ORDER BY tarikhTempahan DESC`,
+    `SELECT t.tempahanId, t.tarikhTempahan, t.statusTempahan, t.jumlahHarga, t.tarikhAmbil, t.kaedahPenghantaran, t.statusBayaran,
+            (SELECT urlImej FROM ImejTempahan WHERE tempahanId = t.tempahanId LIMIT 1) AS imejUrl
+     FROM Tempahan t
+     WHERE t.pelangganId = ?
+     ORDER BY t.tarikhTempahan DESC`,
     [pelangganId]
   );
-  return rows;
+  // Format to include imej array for frontend compatibility
+  return rows.map(row => ({
+    ...row,
+    imej: row.imejUrl ? [{ urlImej: row.imejUrl }] : [],
+  }));
 }
 
 /**
@@ -477,6 +482,8 @@ export async function calculateTotal(pilihanIds) {
     return { jumlahHarga: 0, pilihan: [] };
   }
 
+  console.log('calculateTotal - pilihanIds:', pilihanIds);
+
   const placeholders = pilihanIds.map(() => '?').join(',');
   const [options] = await pool.execute(
     `SELECT p.pilihanId, p.kategoriId, p.nama AS namaPilihan, p.hargaTambahan, k.nama AS namaKategori
@@ -485,6 +492,8 @@ export async function calculateTotal(pilihanIds) {
      WHERE p.pilihanId IN (${placeholders}) AND p.aktif = TRUE`,
     pilihanIds
   );
+
+  console.log('calculateTotal - found options:', options.length, 'of', pilihanIds.length);
 
   const jumlahHarga = options.reduce((sum, opt) => sum + Number(opt.hargaTambahan), 0);
 
@@ -614,10 +623,13 @@ export async function createOrder({ pelangganId, butiran, tarikhAmbil, kaedahPen
     ? alamatPenghantaran.trim()
     : null;
 
-  const [orderResult] = await pool.execute(
-    `INSERT INTO Tempahan (pelangganId, tarikhAmbil, kaedahPenghantaran, alamatPenghantaran, kaedahBayaran, jumlahHarga, statusTempahan, nota)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  const tempahanId = await generateTempahanId();
+
+  await pool.execute(
+    `INSERT INTO Tempahan (tempahanId, pelangganId, tarikhAmbil, kaedahPenghantaran, alamatPenghantaran, kaedahBayaran, jumlahHarga, statusTempahan, nota)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
+      tempahanId,
       pelangganId,
       tarikhAmbil.trim(),
       kaedahPenghantaran.trim(),
@@ -629,15 +641,15 @@ export async function createOrder({ pelangganId, butiran, tarikhAmbil, kaedahPen
     ]
   );
 
-  const tempahanId = orderResult.insertId;
-
   // Create ButiranTempahan records (denormalized)
   for (const item of butiran) {
     const optionDetail = pilihan.find(p => p.pilihanId === item.pilihanId);
+    const butiranId = await generateButiranId();
     await pool.execute(
-      `INSERT INTO ButiranTempahan (tempahanId, kategoriId, pilihanId, namaKategori, namaPilihan, hargaTambahan)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO ButiranTempahan (butiranId, tempahanId, kategoriId, pilihanId, namaKategori, namaPilihan, hargaTambahan)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
+        butiranId,
         tempahanId,
         optionDetail.kategoriId,
         optionDetail.pilihanId,

@@ -14,9 +14,9 @@ const CUSTOMER_SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
  */
 router.post('/pelanggan/daftar', async (req, res) => {
   try {
-    const { noTelefon, nama } = req.body;
+    const { noTelefon, nama, alamat } = req.body;
 
-    const result = await registerCustomer({ noTelefon, nama });
+    const result = await registerCustomer({ noTelefon, nama, alamat });
 
     if (result.ralat) {
       return res.status(400).json(result);

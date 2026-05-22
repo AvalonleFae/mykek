@@ -81,12 +81,12 @@ export default function ReportPage() {
     }
   })() : null
 
-  // Doughnut chart - orders by status
-  const doughnutData = hasData && report.pecahanStatus ? {
-    labels: Object.keys(report.pecahanStatus).filter(k => report.pecahanStatus[k] > 0),
+  // Doughnut chart - most popular cake options
+  const doughnutData = hasData && report.kekPopular && report.kekPopular.length > 0 ? {
+    labels: report.kekPopular.map(k => k.namaPilihan),
     datasets: [{
-      data: Object.values(report.pecahanStatus).filter(v => v > 0),
-      backgroundColor: ['#f97316', '#60a5fa', '#f87171', '#9ca3af', '#818cf8', '#a78bfa', '#34d399'],
+      data: report.kekPopular.map(k => k.bilangan),
+      backgroundColor: ['#f97316', '#60a5fa', '#f87171', '#34d399', '#818cf8', '#fbbf24', '#a78bfa', '#fb923c', '#4ade80', '#f472b6'],
       borderWidth: 2,
       borderColor: '#fff',
     }],

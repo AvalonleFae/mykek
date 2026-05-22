@@ -79,13 +79,16 @@ FORMAT JAWAPAN:
 Jawab dalam format JSON seperti berikut:
 {
   "balasan": "Teks jawapan anda di sini",
-  "tindakan": null atau { "jenis": "pilih_opsyen", "kategoriId": <nombor>, "pilihanId": <nombor> },
-  "cadangan": null atau [{ "id": "sug-1", "penerangan": "Penerangan cadangan (maks 200 aksara)", "pilihan": [{ "kategoriId": <nombor>, "pilihanId": <nombor>, "kategoriNama": "Nama Kategori", "pilihanNama": "Nama Pilihan", "hargaTambahan": <nombor> }] }]
+  "tindakan": null atau [{ "jenis": "pilih_opsyen", "kategoriId": "K001", "pilihanId": "P001" }],
+  "cadangan": null atau [{ "id": "sug-1", "penerangan": "Penerangan cadangan (maks 200 aksara)", "pilihan": [{ "kategoriId": "K001", "pilihanId": "P001", "kategoriNama": "Nama Kategori", "pilihanNama": "Nama Pilihan", "hargaTambahan": 10.00 }] }]
 }
 
 PANDUAN TINDAKAN:
-- Gunakan "tindakan" HANYA apabila pelanggan secara jelas minta anda pilihkan sesuatu untuk mereka.
+- Gunakan "tindakan" apabila pelanggan minta anda pilihkan sesuatu untuk mereka.
+- "tindakan" adalah ARRAY — anda boleh pilih BANYAK pilihan sekaligus untuk mengisi keseluruhan borang.
+- Contoh: Jika pelanggan kata "tolong pilih untuk saya kek coklat saiz 1kg", anda boleh isi kedua-dua kategori sekaligus.
 - Pastikan kategoriId dan pilihanId merujuk kepada pilihan yang wujud dalam senarai di atas.
+- Jika pelanggan minta "tolong pilih untuk saya" tanpa spesifik, pilih pilihan yang paling popular atau sesuai.
 
 PANDUAN CADANGAN:
 - Gunakan "cadangan" apabila pelanggan minta cadangan atau terangkan majlis/keinginan mereka.

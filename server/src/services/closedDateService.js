@@ -1,6 +1,7 @@
 import pool from '../config/db.js';
 import { buildErrorResponse } from '../utils/errorResponse.js';
 import { ERROR_CODES, ORDER_STATUS } from '../utils/constants.js';
+import { generateTarikhTutupId } from '../utils/idGenerator.js';
 
 /**
  * ClosedDateService — handles business logic for unavailability calendar management.
@@ -98,15 +99,16 @@ export async function addClosedDate({ tarikh, catatan }) {
 
   // Insert the closed date
   const catatanValue = (catatan && catatan.trim().length > 0) ? catatan.trim() : null;
-  const [result] = await pool.execute(
-    'INSERT INTO TarikhTutup (tarikh, catatan) VALUES (?, ?)',
-    [tarikh.trim(), catatanValue]
+  const tarikhTutupId = await generateTarikhTutupId();
+  await pool.execute(
+    'INSERT INTO TarikhTutup (tarikhTutupId, tarikh, catatan) VALUES (?, ?, ?)',
+    [tarikhTutupId, tarikh.trim(), catatanValue]
   );
 
   const response = {
     berjaya: true,
     mesej: 'Tarikh tutup berjaya ditambah.',
-    tarikhTutupId: result.insertId,
+    tarikhTutupId,
   };
 
   // Add warning if pending orders exist
@@ -124,7 +126,7 @@ export async function addClosedDate({ tarikh, catatan }) {
  * @returns {Promise<object>} Result
  */
 export async function removeClosedDate(tarikhTutupId) {
-  if (!tarikhTutupId || isNaN(Number(tarikhTutupId))) {
+  if (!tarikhTutupId || String(tarikhTutupId).trim() === '') {
     return buildErrorResponse('ID tarikh tutup tidak sah.', null, ERROR_CODES.FORMAT_TIDAK_SAH);
   }
 

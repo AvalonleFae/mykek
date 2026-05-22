@@ -56,9 +56,31 @@ export default function OrderFormPage() {
   const handleSelectionChange = (categoryId, optionId) => {
     setForm((prev) => ({
       ...prev,
-      selections: { ...prev.selections, [categoryId]: Number(optionId) },
+      selections: { ...prev.selections, [categoryId]: optionId },
     }))
   }
+
+  // Clear stale selections that don't match current categories
+  useEffect(() => {
+    if (categories.length > 0 && Object.keys(form.selections).length > 0) {
+      const validCatIds = categories.map(c => String(c.kategoriId || c.id))
+      const cleanedSelections = {}
+      for (const [catId, optId] of Object.entries(form.selections)) {
+        if (validCatIds.includes(String(catId))) {
+          // Also verify the option exists in this category
+          const cat = categories.find(c => String(c.kategoriId || c.id) === String(catId))
+          const options = cat?.pilihan || []
+          const optionExists = options.some(o => String(o.pilihanId || o.id) === String(optId))
+          if (optionExists) {
+            cleanedSelections[catId] = optId
+          }
+        }
+      }
+      if (Object.keys(cleanedSelections).length !== Object.keys(form.selections).length) {
+        setForm(prev => ({ ...prev, selections: cleanedSelections }))
+      }
+    }
+  }, [categories])
 
   const calculateTotal = () => {
     let total = 0
@@ -66,7 +88,7 @@ export default function OrderFormPage() {
       const catId = cat.kategoriId || cat.id
       const selectedOptionId = form.selections[catId]
       if (selectedOptionId) {
-        const option = (cat.pilihan || []).find((o) => (o.pilihanId || o.id) === selectedOptionId)
+        const option = (cat.pilihan || []).find((o) => String(o.pilihanId || o.id) === String(selectedOptionId))
         if (option) total += Number(option.hargaTambahan || option.harga || 0)
       }
     })
@@ -96,7 +118,11 @@ export default function OrderFormPage() {
       setForm((prev) => ({ ...prev, aiImageUrl: imageUrl }))
     } catch (err) {
       console.error('Image generation error:', err)
-      setError('Gagal menjana imej. Sila cuba lagi atau muat naik imej rujukan.')
+      if (err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('throttled')) {
+        setError('Had penjanaan imej dicapai. Sila tunggu 10 saat dan cuba lagi.')
+      } else {
+        setError('Gagal menjana imej. Sila cuba lagi atau muat naik imej rujukan.')
+      }
     } finally {
       setGeneratingImage(false)
     }
@@ -131,7 +157,7 @@ export default function OrderFormPage() {
     setSubmitting(true)
     try {
       const butiran = Object.entries(form.selections).map(([kategoriId, pilihanId]) => ({
-        kategoriId: Number(kategoriId), pilihanId: Number(pilihanId),
+        kategoriId, pilihanId,
       }))
       // Use typed address or fallback to profile address
       const deliveryAddress = form.kaedahPenghantaran === 'delivery'
@@ -353,6 +379,24 @@ export default function OrderFormPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Closed dates warning */}
+                {closedDates.length > 0 && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs font-semibold text-red-600 mb-1">⚠️ Tarikh Tidak Tersedia:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {closedDates.map((d, idx) => {
+                        const dateObj = new Date(d.tarikh)
+                        const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`
+                        return (
+                          <span key={idx} className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                            {dateStr}{d.catatan ? ` (${d.catatan})` : ''}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {form.kaedahPenghantaran === 'delivery' && (
                   <div className="mb-4">

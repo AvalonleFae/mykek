@@ -73,7 +73,63 @@ export async function getSalesReport(bulan, tahun) {
     jumlahHasil,
     pecahanStatus,
     pecahanBayaran,
+    jualanMingguan: await getWeeklySales(bulan, tahun),
+    kekPopular: await getPopularCakes(bulan, tahun),
   };
+}
+
+/**
+ * Get weekly sales breakdown for a given month.
+ * Returns array of 4 values representing revenue for each week.
+ */
+async function getWeeklySales(bulan, tahun) {
+  const lastDay = new Date(tahun, bulan, 0).getDate();
+  const weeks = [
+    { start: 1, end: 7 },
+    { start: 8, end: 14 },
+    { start: 15, end: 21 },
+    { start: 22, end: lastDay },
+  ];
+
+  const results = [];
+  for (const week of weeks) {
+    const weekStart = `${tahun}-${String(bulan).padStart(2, '0')}-${String(week.start).padStart(2, '0')} 00:00:00`;
+    const weekEnd = `${tahun}-${String(bulan).padStart(2, '0')}-${String(week.end).padStart(2, '0')} 23:59:59`;
+
+    const [rows] = await pool.execute(
+      `SELECT COALESCE(SUM(jumlahHarga), 0) AS jumlah FROM Tempahan
+       WHERE tarikhTempahan >= ? AND tarikhTempahan <= ?
+       AND statusTempahan NOT IN (?, ?)`,
+      [weekStart, weekEnd, ORDER_STATUS.DIBATALKAN, ORDER_STATUS.DITOLAK]
+    );
+    results.push(Number(rows[0].jumlah));
+  }
+
+  return results;
+}
+
+/**
+ * Get most popular cake options (by order count) for a given month.
+ * Queries ButiranTempahan joined with Tempahan to count how many times each option was ordered.
+ */
+async function getPopularCakes(bulan, tahun) {
+  const startDate = `${tahun}-${String(bulan).padStart(2, '0')}-01 00:00:00`;
+  const lastDay = new Date(tahun, bulan, 0).getDate();
+  const endDate = `${tahun}-${String(bulan).padStart(2, '0')}-${String(lastDay).padStart(2, '0')} 23:59:59`;
+
+  const [rows] = await pool.execute(
+    `SELECT bt.namaPilihan, bt.namaKategori, COUNT(*) AS bilangan
+     FROM ButiranTempahan bt
+     JOIN Tempahan t ON bt.tempahanId = t.tempahanId
+     WHERE t.tarikhTempahan >= ? AND t.tarikhTempahan <= ?
+     AND t.statusTempahan NOT IN (?, ?)
+     GROUP BY bt.namaPilihan, bt.namaKategori
+     ORDER BY bilangan DESC
+     LIMIT 10`,
+    [startDate, endDate, ORDER_STATUS.DIBATALKAN, ORDER_STATUS.DITOLAK]
+  );
+
+  return rows;
 }
 
 /**

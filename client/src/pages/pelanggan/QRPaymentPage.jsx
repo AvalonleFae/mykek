@@ -33,7 +33,7 @@ export default function QRPaymentPage() {
 
             {/* Done Button */}
             <button
-              onClick={() => navigate(`/pelanggan/tempahan/${id}`)}
+              onClick={() => navigate('/pelanggan/tempahan')}
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm"
             >
               Sudah Bayar

@@ -139,15 +139,16 @@ router.post('/simpan-imej-ai', async (req, res) => {
       );
     }
 
-    const orderId = parseInt(tempahanId, 10);
-    if (isNaN(orderId)) {
+    const orderId = String(tempahanId).trim();
+    if (orderId === '') {
       return res.status(400).json(
         buildErrorResponse('ID tempahan tidak sah.', 'tempahanId', 'FORMAT_TIDAK_SAH')
       );
     }
 
-    // Import pool directly for this endpoint
+    // Import pool and generateImejId directly for this endpoint
     const { default: pool } = await import('../../config/db.js');
+    const { generateImejId } = await import('../../utils/idGenerator.js');
 
     // Verify order exists and belongs to this customer
     const [orders] = await pool.execute(
@@ -173,9 +174,10 @@ router.post('/simpan-imej-ai', async (req, res) => {
         [urlImej, promptAI || null, existing[0].imejId]
       );
     } else {
+      const imejId = await generateImejId();
       await pool.execute(
-        "INSERT INTO ImejTempahan (tempahanId, jenisImej, urlImej, promptAI, tarikhMuatNaik) VALUES (?, 'AI', ?, ?, NOW())",
-        [orderId, urlImej, promptAI || null]
+        "INSERT INTO ImejTempahan (imejId, tempahanId, jenisImej, urlImej, promptAI, tarikhMuatNaik) VALUES (?, ?, 'AI', ?, ?, NOW())",
+        [imejId, orderId, urlImej, promptAI || null]
       );
     }
 

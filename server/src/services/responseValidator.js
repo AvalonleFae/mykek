@@ -63,9 +63,15 @@ export function validateResponse(aiResponse, spesifikasiKek = []) {
     return FALLBACK_RESPONSE
   }
 
-  // Validate tindakan if present
+  // Validate tindakan if present (can be single object or array)
   if (tindakan) {
-    tindakan = validateAction(tindakan, spesifikasiKek)
+    if (Array.isArray(tindakan)) {
+      tindakan = tindakan.map(a => validateAction(a, spesifikasiKek)).filter(Boolean)
+      if (tindakan.length === 0) tindakan = null
+    } else {
+      tindakan = validateAction(tindakan, spesifikasiKek)
+      if (tindakan) tindakan = [tindakan] // normalize to array
+    }
   }
 
   // Validate cadangan if present

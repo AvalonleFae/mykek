@@ -4,6 +4,15 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import api from '../../services/api'
 
+const API_BASE = 'http://localhost:3001'
+
+// Helper to get full image URL
+function getImageUrl(urlImej) {
+  if (!urlImej) return ''
+  if (urlImej.startsWith('http') || urlImej.startsWith('data:')) return urlImej
+  return `${API_BASE}${urlImej}`
+}
+
 const ACTIVE_STATUSES = ['Menunggu Pengesahan', 'Diterima', 'Sedang Dibuat', 'Siap']
 const HISTORY_STATUSES = ['Selesai', 'Dibatalkan', 'Ditolak']
 
@@ -139,7 +148,7 @@ export default function OrderListPage() {
                           {/* Image placeholder */}
                           <div className="w-16 h-16 bg-gray-200 rounded-lg shrink-0 flex items-center justify-center">
                             {order.imej && order.imej.length > 0 ? (
-                              <img src={order.imej[0].urlImej} alt="Kek" className="w-full h-full object-cover rounded-lg" />
+                              <img src={getImageUrl(order.imej[0].urlImej)} alt="Kek" className="w-full h-full object-cover rounded-lg" />
                             ) : (
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-8 h-8 text-gray-400">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
@@ -196,7 +205,7 @@ export default function OrderListPage() {
                         <div className="flex gap-3">
                           <div className="w-14 h-14 bg-gray-100 rounded-lg shrink-0 flex items-center justify-center">
                             {order.imej && order.imej.length > 0 ? (
-                              <img src={order.imej[0].urlImej} alt="Kek" className="w-full h-full object-cover rounded-lg" />
+                              <img src={getImageUrl(order.imej[0].urlImej)} alt="Kek" className="w-full h-full object-cover rounded-lg" />
                             ) : (
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-6 h-6 text-gray-300">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
@@ -262,7 +271,7 @@ export default function OrderListPage() {
                     </p>
                     <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
                       <img
-                        src={selectedOrder.imej[0].urlImej}
+                        src={getImageUrl(selectedOrder.imej[0].urlImej)}
                         alt="Rujukan kek"
                         className="w-full rounded object-contain"
                       />
@@ -295,6 +304,14 @@ export default function OrderListPage() {
                     <p className="text-sm font-semibold text-gray-800">{formatDate(selectedOrder.tarikhAmbil)}</p>
                   </div>
                 </div>
+
+                {/* Address - if delivery */}
+                {selectedOrder.alamatPenghantaran && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-400">Alamat Penghantaran</p>
+                    <p className="text-sm font-semibold text-gray-800">{selectedOrder.alamatPenghantaran}</p>
+                  </div>
+                )}
 
                 {/* Notes */}
                 {selectedOrder.nota && (

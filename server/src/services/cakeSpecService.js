@@ -2,6 +2,7 @@ import pool from '../config/db.js';
 import { buildErrorResponse } from '../utils/errorResponse.js';
 import { ERROR_CODES } from '../utils/constants.js';
 import { validatePrice } from '../utils/validators.js';
+import { generateKategoriId, generatePilihanId } from '../utils/idGenerator.js';
 
 /**
  * CakeSpecService — handles CRUD for cake specification categories and options.
@@ -50,12 +51,14 @@ export async function createCategory({ nama, penerangan }) {
 
   const trimmedPenerangan = penerangan ? penerangan.trim() : null;
 
-  const [result] = await pool.execute(
-    'INSERT INTO KategoriSpesifikasiKek (nama, penerangan) VALUES (?, ?)',
-    [trimmedNama, trimmedPenerangan]
+  const kategoriId = await generateKategoriId();
+
+  await pool.execute(
+    'INSERT INTO KategoriSpesifikasiKek (kategoriId, nama, penerangan) VALUES (?, ?, ?)',
+    [kategoriId, trimmedNama, trimmedPenerangan]
   );
 
-  return { kategoriId: result.insertId };
+  return { kategoriId };
 }
 
 /**
@@ -237,12 +240,14 @@ export async function createOption({ kategoriId, nama, penerangan, hargaTambahan
 
   const trimmedPenerangan = penerangan ? penerangan.trim() : null;
 
-  const [result] = await pool.execute(
-    'INSERT INTO PilihanSpesifikasiKek (kategoriId, nama, penerangan, hargaTambahan) VALUES (?, ?, ?, ?)',
-    [kategoriId, trimmedNama, trimmedPenerangan, priceValue]
+  const pilihanId = await generatePilihanId();
+
+  await pool.execute(
+    'INSERT INTO PilihanSpesifikasiKek (pilihanId, kategoriId, nama, penerangan, hargaTambahan) VALUES (?, ?, ?, ?, ?)',
+    [pilihanId, kategoriId, trimmedNama, trimmedPenerangan, priceValue]
   );
 
-  return { pilihanId: result.insertId };
+  return { pilihanId };
 }
 
 /**

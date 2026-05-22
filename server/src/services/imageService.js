@@ -1,6 +1,7 @@
 import pool from '../config/db.js';
 import { buildErrorResponse } from '../utils/errorResponse.js';
 import { IMAGE_TYPE, ERROR_CODES } from '../utils/constants.js';
+import { generateImejId } from '../utils/idGenerator.js';
 
 /**
  * Rate limiter for AI image generation.
@@ -82,8 +83,8 @@ export async function uploadImage(file, tempahanId) {
     return buildErrorResponse('ID tempahan diperlukan.', 'tempahanId', ERROR_CODES.MEDAN_KOSONG);
   }
 
-  const orderId = parseInt(tempahanId, 10);
-  if (isNaN(orderId)) {
+  const orderId = String(tempahanId).trim();
+  if (orderId === '') {
     return buildErrorResponse('ID tempahan tidak sah.', 'tempahanId', ERROR_CODES.FORMAT_TIDAK_SAH);
   }
 
@@ -102,9 +103,10 @@ export async function uploadImage(file, tempahanId) {
   if (existing.length > 0) {
     await pool.execute('UPDATE ImejTempahan SET urlImej = ?, tarikhMuatNaik = NOW() WHERE imejId = ?', [imageUrl, existing[0].imejId]);
   } else {
+    const imejId = await generateImejId();
     await pool.execute(
-      'INSERT INTO ImejTempahan (tempahanId, jenisImej, urlImej, tarikhMuatNaik) VALUES (?, ?, ?, NOW())',
-      [orderId, IMAGE_TYPE.MUAT_NAIK, imageUrl]
+      'INSERT INTO ImejTempahan (imejId, tempahanId, jenisImej, urlImej, tarikhMuatNaik) VALUES (?, ?, ?, ?, NOW())',
+      [imejId, orderId, IMAGE_TYPE.MUAT_NAIK, imageUrl]
     );
   }
 

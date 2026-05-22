@@ -1,8 +1,9 @@
 -- Default Merchant account for Zuraida Patisserie
 -- Username: admin
 -- Password: admin123 (bcrypt hashed)
-INSERT INTO Peniaga (namaPenggunaAdmin, kataLaluan, namaKedai, noTelefonKedai, peneranganKedai)
+INSERT INTO Peniaga (peniagaId, namaPenggunaAdmin, kataLaluan, namaKedai, noTelefonKedai, peneranganKedai)
 VALUES (
+  'N001',
   'admin',
   '$2b$10$7awWGeJEcrt3bw2MZiIlj./yEhk5fhJoeTmUcljmwMkKBHrGZREc2',
   'Zuraida Patisserie',

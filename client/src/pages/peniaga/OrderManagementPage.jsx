@@ -6,6 +6,9 @@ import ErrorMessage from '../../components/shared/ErrorMessage'
 import SuccessMessage from '../../components/shared/SuccessMessage'
 import api from '../../services/api'
 
+const API_BASE = 'http://localhost:3001'
+function getImageUrl(url) { if (!url) return ''; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; }
+
 const TABS = [
   { key: 'baharu', label: 'Tempahan Baharu', statuses: ['Menunggu Pengesahan'] },
   { key: 'aktif', label: 'Masih Aktif', statuses: ['Diterima', 'Sedang Dibuat', 'Siap'] },
@@ -322,12 +325,12 @@ export default function OrderManagementPage() {
                       {detailModal.order.imej && detailModal.order.imej.length > 0 ? (
                         <div>
                           <img
-                            src={detailModal.order.imej[0].urlImej}
+                            src={getImageUrl(detailModal.order.imej[0].urlImej)}
                             alt="Rujukan Kek"
                             className="w-full h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                           />
                           <a
-                            href={detailModal.order.imej[0].urlImej}
+                            href={getImageUrl(detailModal.order.imej[0].urlImej)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-orange-600 hover:text-orange-700 mt-2 inline-block"

@@ -9,9 +9,8 @@ export const ORDER_STATUS = Object.freeze({
   DITERIMA: 'Diterima',
   DITOLAK: 'Ditolak',
   DIBATALKAN: 'Dibatalkan',
-  SEDANG_DIPROSES: 'Sedang Diproses',
-  SEDANG_DIHIAS: 'Sedang Dihias',
-  SEDIA: 'Sedia untuk Diambil/Dihantar',
+  SEDANG_DIBUAT: 'Sedang Dibuat',
+  SIAP: 'Siap',
   SELESAI: 'Selesai',
 });
 

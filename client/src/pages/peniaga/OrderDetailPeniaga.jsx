@@ -1,9 +1,12 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import SuccessMessage from '../../components/shared/SuccessMessage'
 import api from '../../services/api'
+
+const API_BASE = 'http://localhost:3001'
+function getImageUrl(url) { if (!url) return ''; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; }
 
 const STATUS_FLOW = [
   'Diterima',
@@ -359,12 +362,12 @@ export default function OrderDetailPeniaga() {
                   {isAI ? 'Janaan AI' : 'Muat Naik'}
                 </p>
                 <img
-                  src={mainImage.urlImej}
+                  src={getImageUrl(mainImage.urlImej)}
                   alt="Rujukan Kek"
                   className="w-full h-64 object-contain rounded-lg border border-gray-200 bg-gray-50"
                 />
                 <a
-                  href={mainImage.urlImej}
+                  href={getImageUrl(mainImage.urlImej)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-orange-600 hover:text-orange-700 mt-3 inline-block font-medium"

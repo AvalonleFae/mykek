@@ -63,8 +63,8 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const kategoriId = parseInt(req.params.id, 10);
-    if (isNaN(kategoriId)) {
+    const kategoriId = req.params.id;
+    if (!kategoriId || kategoriId.trim() === '') {
       return res.status(400).json(buildErrorResponse('ID kategori tidak sah.'));
     }
 
@@ -92,8 +92,8 @@ router.put('/:id', async (req, res) => {
  */
 router.delete('/:id', async (req, res) => {
   try {
-    const kategoriId = parseInt(req.params.id, 10);
-    if (isNaN(kategoriId)) {
+    const kategoriId = req.params.id;
+    if (!kategoriId || kategoriId.trim() === '') {
       return res.status(400).json(buildErrorResponse('ID kategori tidak sah.'));
     }
 
@@ -129,8 +129,8 @@ optionRouter.use(authMiddleware, roleGuard('peniaga'));
  */
 optionRouter.get('/:kategoriId', async (req, res) => {
   try {
-    const kategoriId = parseInt(req.params.kategoriId, 10);
-    if (isNaN(kategoriId)) {
+    const kategoriId = req.params.kategoriId;
+    if (!kategoriId || kategoriId.trim() === '') {
       return res.status(400).json(buildErrorResponse('ID kategori tidak sah.'));
     }
 
@@ -178,8 +178,8 @@ optionRouter.post('/', async (req, res) => {
  */
 optionRouter.put('/:id', async (req, res) => {
   try {
-    const pilihanId = parseInt(req.params.id, 10);
-    if (isNaN(pilihanId)) {
+    const pilihanId = req.params.id;
+    if (!pilihanId || pilihanId.trim() === '') {
       return res.status(400).json(buildErrorResponse('ID pilihan tidak sah.'));
     }
 
@@ -207,8 +207,8 @@ optionRouter.put('/:id', async (req, res) => {
  */
 optionRouter.delete('/:id', async (req, res) => {
   try {
-    const pilihanId = parseInt(req.params.id, 10);
-    if (isNaN(pilihanId)) {
+    const pilihanId = req.params.id;
+    if (!pilihanId || pilihanId.trim() === '') {
       return res.status(400).json(buildErrorResponse('ID pilihan tidak sah.'));
     }
 
