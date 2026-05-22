@@ -1,8 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '../components/Header'
 import LoginCard from '../components/LoginCard'
+import api from '../services/api'
 
 export default function LandingPage() {
+  const [shopInfo, setShopInfo] = useState({
+    namaKedai: 'Zuraida Patisserie',
+    noTelefonKedai: '0123456789',
+    peneranganKedai: 'Kedai kek dan pastri di Sarawak. Menyediakan pelbagai jenis kek mengikut tempahan.',
+  })
+
+  useEffect(() => {
+    // Fetch public shop info from API
+    api.get('/api/awam/profil-kedai')
+      .then((res) => {
+        if (res.data?.data) {
+          setShopInfo({
+            namaKedai: res.data.data.namaKedai || 'Zuraida Patisserie',
+            noTelefonKedai: res.data.data.noTelefonKedai || '0123456789',
+            peneranganKedai: res.data.data.peneranganKedai || '',
+          })
+        }
+      })
+      .catch(() => {
+        // Use defaults if API fails
+      })
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -24,7 +48,7 @@ export default function LandingPage() {
           {/* Left - Shop Info */}
           <div className="text-white max-w-md mb-8 md:mb-0">
             <p className="text-lg md:text-xl font-medium mb-2">
-              MyKek merupakan sistem tempahan kek digital untuk Zuraida Patisserie.
+              {shopInfo.peneranganKedai}
             </p>
             <p className="text-lg font-semibold mt-6 mb-4">Hubungi Kami!</p>
 
@@ -34,7 +58,7 @@ export default function LandingPage() {
                   <path fillRule="evenodd" d="M1.5 4.5a3 3 0 013-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 01-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 006.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 011.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 01-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5z" clipRule="evenodd" />
                 </svg>
               </span>
-              <span className="text-base">0123456789</span>
+              <span className="text-base">{shopInfo.noTelefonKedai}</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -55,7 +79,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-white py-4 px-6 text-center text-sm text-gray-500 border-t">
-        © 2026 MyKek - Zuraida Patisserie. Hak Cipta Terpelihara.
+        © 2026 MyKek - {shopInfo.namaKedai}. Hak Cipta Terpelihara.
       </footer>
     </div>
   )

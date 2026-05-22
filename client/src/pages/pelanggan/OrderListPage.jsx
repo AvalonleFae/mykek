@@ -4,7 +4,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import api from '../../services/api'
 
-const ACTIVE_STATUSES = ['Menunggu Pengesahan', 'Diterima', 'Sedang Diproses', 'Sedang Dihias', 'Sedia untuk Diambil/Dihantar']
+const ACTIVE_STATUSES = ['Menunggu Pengesahan', 'Diterima', 'Sedang Dibuat', 'Siap']
 const HISTORY_STATUSES = ['Selesai', 'Dibatalkan', 'Ditolak']
 
 function getStatusColor(status) {

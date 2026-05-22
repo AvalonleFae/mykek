@@ -180,21 +180,27 @@ export default function SpecManagementPage() {
 
             {showCatForm && (
               <form onSubmit={handleSaveCategory} className="mb-4 p-4 bg-gray-50 rounded-xl space-y-3">
-                <input
-                  type="text"
-                  value={catForm.nama}
-                  onChange={(e) => setCatForm({ ...catForm, nama: e.target.value })}
-                  placeholder="Nama kategori"
-                  required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                />
-                <input
-                  type="text"
-                  value={catForm.penerangan}
-                  onChange={(e) => setCatForm({ ...catForm, penerangan: e.target.value })}
-                  placeholder="Penerangan (pilihan)"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nama Kategori</label>
+                  <input
+                    type="text"
+                    value={catForm.nama}
+                    onChange={(e) => setCatForm({ ...catForm, nama: e.target.value })}
+                    placeholder="Contoh: Perisa, Saiz"
+                    required
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Penerangan Kategori</label>
+                  <input
+                    type="text"
+                    value={catForm.penerangan}
+                    onChange={(e) => setCatForm({ ...catForm, penerangan: e.target.value })}
+                    placeholder="Penerangan ringkas kategori (pilihan)"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  />
+                </div>
                 <div className="flex gap-2">
                   <button type="submit" className="px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
                     {editingCat ? 'Kemaskini' : 'Simpan'}
@@ -274,30 +280,39 @@ export default function SpecManagementPage() {
               <>
                 {showOptForm && (
                   <form onSubmit={handleSaveOption} className="mb-4 p-4 bg-gray-50 rounded-xl space-y-3">
-                    <input
-                      type="text"
-                      value={optForm.nama}
-                      onChange={(e) => setOptForm({ ...optForm, nama: e.target.value })}
-                      placeholder="Nama pilihan"
-                      required
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    />
-                    <input
-                      type="text"
-                      value={optForm.penerangan}
-                      onChange={(e) => setOptForm({ ...optForm, penerangan: e.target.value })}
-                      placeholder="Penerangan (pilihan)"
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    />
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={optForm.hargaTambahan}
-                      onChange={(e) => setOptForm({ ...optForm, hargaTambahan: e.target.value })}
-                      placeholder="Harga tambahan (RM)"
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                    />
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Nama Pilihan</label>
+                      <input
+                        type="text"
+                        value={optForm.nama}
+                        onChange={(e) => setOptForm({ ...optForm, nama: e.target.value })}
+                        placeholder="Contoh: Coklat, 1.0 KG"
+                        required
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Penerangan Pilihan</label>
+                      <input
+                        type="text"
+                        value={optForm.penerangan}
+                        onChange={(e) => setOptForm({ ...optForm, penerangan: e.target.value })}
+                        placeholder="Penerangan ringkas pilihan ini (pilihan)"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Harga Tambahan (RM)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={optForm.hargaTambahan}
+                        onChange={(e) => setOptForm({ ...optForm, hargaTambahan: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button type="submit" className="px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
                         {editingOpt ? 'Kemaskini' : 'Simpan'}
