@@ -125,4 +125,70 @@ router.post('/muat-naik-imej', (req, res) => {
   });
 });
 
+/**
+ * POST /api/pelanggan/tempahan/simpan-imej-ai
+ * Save an AI-generated image URL to the order's ImejTempahan record.
+ */
+router.post('/simpan-imej-ai', async (req, res) => {
+  try {
+    const { tempahanId, urlImej, promptAI } = req.body;
+
+    if (!tempahanId || !urlImej) {
+      return res.status(400).json(
+        buildErrorResponse('ID tempahan dan URL imej diperlukan.', null, 'MEDAN_KOSONG')
+      );
+    }
+
+    const orderId = parseInt(tempahanId, 10);
+    if (isNaN(orderId)) {
+      return res.status(400).json(
+        buildErrorResponse('ID tempahan tidak sah.', 'tempahanId', 'FORMAT_TIDAK_SAH')
+      );
+    }
+
+    // Import pool directly for this endpoint
+    const { default: pool } = await import('../../config/db.js');
+
+    // Verify order exists and belongs to this customer
+    const [orders] = await pool.execute(
+      'SELECT tempahanId FROM Tempahan WHERE tempahanId = ? AND pelangganId = ?',
+      [orderId, req.session.userId]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json(
+        buildErrorResponse('Tempahan tidak ditemui.', 'tempahanId', 'TIDAK_DITEMUI')
+      );
+    }
+
+    // Check if AI image already exists for this order — replace it
+    const [existing] = await pool.execute(
+      "SELECT imejId FROM ImejTempahan WHERE tempahanId = ? AND jenisImej = 'AI'",
+      [orderId]
+    );
+
+    if (existing.length > 0) {
+      await pool.execute(
+        'UPDATE ImejTempahan SET urlImej = ?, promptAI = ?, tarikhMuatNaik = NOW() WHERE imejId = ?',
+        [urlImej, promptAI || null, existing[0].imejId]
+      );
+    } else {
+      await pool.execute(
+        "INSERT INTO ImejTempahan (tempahanId, jenisImej, urlImej, promptAI, tarikhMuatNaik) VALUES (?, 'AI', ?, ?, NOW())",
+        [orderId, urlImej, promptAI || null]
+      );
+    }
+
+    return res.status(200).json({
+      ralat: false,
+      mesej: 'Imej AI berjaya disimpan.',
+    });
+  } catch (error) {
+    console.error('Save AI image error:', error);
+    return res.status(500).json(
+      buildErrorResponse('Ralat semasa menyimpan imej AI.')
+    );
+  }
+});
+
 export default router;

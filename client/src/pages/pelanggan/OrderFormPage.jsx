@@ -1,7 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { puter } from '@heyputer/puter.js'
-import Header from '../../components/Header'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import useFormPersistence from '../../hooks/useFormPersistence'
@@ -15,7 +14,7 @@ const INITIAL_FORM = {
   kaedahPenghantaran: 'pickup',
   alamatPenghantaran: '',
   catatan: '',
-  imageMode: '',
+  imageMode: 'ai',
   aiPrompt: '',
   aiImageUrl: '',
   uploadedFile: null,
@@ -30,24 +29,25 @@ export default function OrderFormPage() {
   const [categories, setCategories] = useState([])
   const [closedDates, setClosedDates] = useState([])
   const [generatingImage, setGeneratingImage] = useState(false)
+  const [profileAddress, setProfileAddress] = useState('')
 
   const [form, setForm] = useState(INITIAL_FORM)
   const { clearPersistedData } = useFormPersistence('mykek-order-form', form, setForm)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     try {
-      const [specsRes, datesRes] = await Promise.all([
+      const [specsRes, datesRes, profileRes] = await Promise.all([
         api.get('/api/pelanggan/spesifikasi-kek'),
         api.get('/api/pelanggan/tarikh-tutup'),
+        api.get('/api/pelanggan/profil'),
       ])
-      setCategories(specsRes.data.data || specsRes.data || [])
-      setClosedDates(datesRes.data.data || datesRes.data || [])
+      setCategories(specsRes.data.data || [])
+      setClosedDates(datesRes.data.data || [])
+      setProfileAddress(profileRes.data.data?.alamat || '')
     } catch (err) {
-      setError(err.response?.data?.mesej || 'Gagal memuatkan data. Sila cuba lagi.')
+      setError(err.response?.data?.mesej || 'Gagal memuatkan data.')
     } finally {
       setLoading(false)
     }
@@ -56,58 +56,46 @@ export default function OrderFormPage() {
   const handleSelectionChange = (categoryId, optionId) => {
     setForm((prev) => ({
       ...prev,
-      selections: { ...prev.selections, [categoryId]: optionId },
+      selections: { ...prev.selections, [categoryId]: Number(optionId) },
     }))
   }
 
   const calculateTotal = () => {
     let total = 0
     categories.forEach((cat) => {
-      const selectedOptionId = form.selections[cat.id || cat.kategoriId]
+      const catId = cat.kategoriId || cat.id
+      const selectedOptionId = form.selections[catId]
       if (selectedOptionId) {
-        const option = (cat.pilihan || cat.options || []).find(
-          (o) => (o.id || o.pilihanId) === selectedOptionId
-        )
-        if (option) {
-          total += Number(option.harga || option.price || 0)
-        }
+        const option = (cat.pilihan || []).find((o) => (o.pilihanId || o.id) === selectedOptionId)
+        if (option) total += Number(option.hargaTambahan || option.harga || 0)
       }
     })
     return total
   }
 
   const getMinDate = () => {
-    const date = new Date()
-    date.setDate(date.getDate() + 2)
-    return date.toISOString().split('T')[0]
+    const d = new Date(); d.setDate(d.getDate() + 2)
+    return d.toISOString().split('T')[0]
   }
 
-  const isDateClosed = (dateStr) => {
-    return closedDates.some((d) => {
-      const closed = d.tarikh || d.date
-      return closed && closed.split('T')[0] === dateStr
-    })
-  }
+  const isDateClosed = (dateStr) => closedDates.some((d) => (d.tarikh || '').split('T')[0] === dateStr)
 
   const handleGenerateAI = async () => {
     if (form.aiPrompt.length < 10 || form.aiPrompt.length > 500) {
       setError('Penerangan imej mestilah antara 10 hingga 500 aksara.')
       return
     }
-
     setError('')
     setGeneratingImage(true)
     try {
-      // Use Puter.js for free image generation (no API key needed)
       const imageElement = await puter.ai.txt2img(
         `A realistic custom cake design: ${form.aiPrompt}`,
-        { model: 'gemini-2.5-flash-image' }
+        { model: 'flux-schnell' }
       )
-      // imageElement is an <img> element, extract its src
       const imageUrl = imageElement.src || imageElement.getAttribute('src')
       setForm((prev) => ({ ...prev, aiImageUrl: imageUrl }))
     } catch (err) {
-      console.error('Puter.js image generation error:', err)
+      console.error('Image generation error:', err)
       setError('Gagal menjana imej. Sila cuba lagi atau muat naik imej rujukan.')
     } finally {
       setGeneratingImage(false)
@@ -117,378 +105,313 @@ export default function OrderFormPage() {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Validate file type
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      setError('Hanya fail JPEG atau PNG dibenarkan.')
-      return
-    }
-
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Saiz fail tidak boleh melebihi 5MB.')
-      return
-    }
-
+    if (!['image/jpeg', 'image/png'].includes(file.type)) { setError('Hanya fail JPEG atau PNG dibenarkan.'); return }
+    if (file.size > 5 * 1024 * 1024) { setError('Saiz fail tidak boleh melebihi 5MB.'); return }
     setError('')
-    const preview = URL.createObjectURL(file)
-    setForm((prev) => ({ ...prev, uploadedFile: file, uploadPreview: preview }))
+    setForm((prev) => ({ ...prev, uploadedFile: file, uploadPreview: URL.createObjectURL(file) }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    // Validate selections
-    const requiredCategories = categories.filter((c) => c.pilihan?.length > 0 || c.options?.length > 0)
-    for (const cat of requiredCategories) {
-      if (!form.selections[cat.id || cat.kategoriId]) {
-        setError(`Sila pilih pilihan untuk kategori "${cat.nama || cat.name}".`)
-        return
+    const requiredCats = categories.filter((c) => (c.pilihan || []).length > 0)
+    for (const cat of requiredCats) {
+      if (!form.selections[cat.kategoriId || cat.id]) {
+        setError(`Sila pilih pilihan untuk "${cat.nama}".`); return
       }
     }
-
-    // Validate date
-    if (!form.tarikhAmbil) {
-      setError('Sila pilih tarikh ambil/penghantaran.')
-      return
-    }
-
-    if (form.tarikhAmbil < getMinDate()) {
-      setError('Tarikh mestilah sekurang-kurangnya 2 hari dari hari ini.')
-      return
-    }
-
-    if (isDateClosed(form.tarikhAmbil)) {
-      setError('Tarikh yang dipilih adalah hari tutup. Sila pilih tarikh lain.')
-      return
-    }
-
-    // Validate delivery address
-    if (form.kaedahPenghantaran === 'delivery' && !form.alamatPenghantaran.trim()) {
-      setError('Sila masukkan alamat penghantaran.')
-      return
-    }
-
-    // Validate notes
-    if (form.catatan.length > 500) {
-      setError('Catatan tidak boleh melebihi 500 aksara.')
-      return
+    if (!form.tarikhAmbil) { setError('Sila pilih tarikh ambil/penghantaran.'); return }
+    if (form.tarikhAmbil < getMinDate()) { setError('Tarikh mestilah sekurang-kurangnya 2 hari dari hari ini.'); return }
+    if (isDateClosed(form.tarikhAmbil)) { setError('Tarikh yang dipilih adalah hari tutup.'); return }
+    // For delivery: use typed address, or fall back to profile address
+    if (form.kaedahPenghantaran === 'delivery' && !form.alamatPenghantaran.trim() && !profileAddress) {
+      setError('Sila masukkan alamat penghantaran atau kemaskini alamat di profil anda.'); return
     }
 
     setSubmitting(true)
     try {
-      // Build order payload
       const butiran = Object.entries(form.selections).map(([kategoriId, pilihanId]) => ({
-        kategoriId: Number(kategoriId),
-        pilihanId: Number(pilihanId),
+        kategoriId: Number(kategoriId), pilihanId: Number(pilihanId),
       }))
-
+      // Use typed address or fallback to profile address
+      const deliveryAddress = form.kaedahPenghantaran === 'delivery'
+        ? (form.alamatPenghantaran.trim() || profileAddress)
+        : undefined
       const payload = {
         butiran,
         tarikhAmbil: form.tarikhAmbil,
         kaedahPenghantaran: form.kaedahPenghantaran === 'delivery' ? 'Penghantaran' : 'Ambil Sendiri',
-        alamatPenghantaran: form.kaedahPenghantaran === 'delivery' ? form.alamatPenghantaran : undefined,
+        alamatPenghantaran: deliveryAddress,
         catatan: form.catatan || undefined,
-        aiImageUrl: form.aiImageUrl || undefined,
       }
-
       const res = await api.post('/api/pelanggan/tempahan', payload)
-      const orderId = res.data.data?.id || res.data.data?.tempahanId || res.data.id
+      const orderId = res.data.tempahanId || res.data.data?.tempahanId || res.data.id
+      console.log('Order created, response:', res.data, 'orderId:', orderId)
 
-      // Upload image if file was selected
+      // Save uploaded image if file was selected
       if (form.uploadedFile && orderId) {
         try {
-          const formData = new FormData()
-          formData.append('imej', form.uploadedFile)
-          formData.append('tempahanId', orderId)
-          await api.post('/api/pelanggan/tempahan/muat-naik-imej', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+          const fd = new FormData()
+          fd.append('imej', form.uploadedFile)
+          fd.append('tempahanId', orderId)
+          await api.post('/api/pelanggan/tempahan/muat-naik-imej', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+        } catch { /* non-blocking */ }
+      }
+
+      // Save AI-generated image URL if available
+      if (form.aiImageUrl && orderId) {
+        try {
+          await api.post('/api/pelanggan/tempahan/simpan-imej-ai', {
+            tempahanId: orderId,
+            urlImej: form.aiImageUrl,
+            promptAI: form.aiPrompt,
           })
-        } catch {
-          // Image upload failure shouldn't block order success
+        } catch (imgErr) {
+          console.error('Failed to save AI image:', imgErr.response?.data || imgErr.message)
         }
       }
 
       clearPersistedData()
       navigate(`/pelanggan/bayaran/${orderId}`)
     } catch (err) {
-      setError(err.response?.data?.mesej || 'Gagal menghantar tempahan. Sila cuba lagi.')
+      setError(err.response?.data?.mesej || 'Gagal menghantar tempahan.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const total = calculateTotal()
-
-  // Handle chatbot form actions (selecting options)
   const handleChatbotFormAction = (action) => {
-    if (action && action.jenis === 'pilih_opsyen' && action.kategoriId && action.pilihanId) {
-      handleSelectionChange(action.kategoriId, action.pilihanId)
-    }
+    if (action?.jenis === 'pilih_opsyen') handleSelectionChange(action.kategoriId, action.pilihanId)
   }
+
+  const total = calculateTotal()
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header />
-
-      <main className="flex-1 p-6 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
-        <div className="max-w-2xl mx-auto">
-          {/* Back button */}
-          <button
-            onClick={() => navigate('/pelanggan')}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-orange-500 mb-6 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      {/* Header */}
+      <header className="bg-white px-4 py-3 flex items-center justify-between border-b shadow-sm">
+        <div className="flex items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-orange-500">
+            <path d="M12 2L2 19h20L12 2z" />
+          </svg>
+          <span className="text-lg font-bold text-gray-800">MyKek</span>
+          <button onClick={() => navigate('/pelanggan')} className="ml-2 text-gray-600 hover:text-orange-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
-            Kembali ke Menu Utama
           </button>
+        </div>
+        <span className="px-4 py-1.5 bg-orange-500 text-white text-sm font-medium rounded-full">
+          Tempahan Kek Baharu
+        </span>
+      </header>
 
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h1 className="text-xl font-bold text-gray-800 mb-6">Tempahan Baharu</h1>
+      <main className="flex-1 p-4 md:p-8" style={{ backgroundColor: '#FFF5EE' }}>
+        <div className="max-w-lg mx-auto">
+          {loading ? <LoadingSpinner /> : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && <ErrorMessage message={error} />}
 
-            {loading ? (
-              <LoadingSpinner />
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && <ErrorMessage message={error} />}
+              {/* Section 1: Spesifikasi Kek */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-orange-500 font-semibold text-sm mb-4">1. Spesifikasi Kek</h2>
 
-                {/* Cake Specifications */}
                 {categories.map((cat) => {
-                  const catId = cat.id || cat.kategoriId
-                  const options = cat.pilihan || cat.options || []
+                  const catId = cat.kategoriId || cat.id
+                  const options = cat.pilihan || []
                   return (
-                    <div key={catId} className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-700">
-                        {cat.nama || cat.name}
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {options.map((opt) => {
-                          const optId = opt.id || opt.pilihanId
-                          const isSelected = form.selections[catId] === optId
-                          return (
-                            <button
-                              key={optId}
-                              type="button"
-                              onClick={() => handleSelectionChange(catId, optId)}
-                              className={`p-3 rounded-xl border text-sm text-left transition-all ${
-                                isSelected
-                                  ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
-                                  : 'border-gray-200 hover:border-orange-300'
-                              }`}
-                            >
-                              <p className="font-medium text-gray-800">{opt.nama || opt.name}</p>
-                              <p className="text-xs text-orange-500 mt-1">
-                                RM {Number(opt.harga || opt.price || 0).toFixed(2)}
-                              </p>
-                            </button>
-                          )
-                        })}
-                      </div>
+                    <div key={catId} className="mb-4">
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">{cat.nama}</label>
+                      <select
+                        value={form.selections[catId] || ''}
+                        onChange={(e) => handleSelectionChange(catId, e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 appearance-none"
+                      >
+                        <option value="">-- Pilih --</option>
+                        {options.map((opt) => (
+                          <option key={opt.pilihanId || opt.id} value={opt.pilihanId || opt.id}>
+                            {opt.nama} — RM {Number(opt.hargaTambahan || 0).toFixed(2)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   )
                 })}
+              </div>
 
-                {/* Price Total */}
-                <div className="p-4 bg-orange-50 rounded-xl border border-orange-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-gray-700">Jumlah Harga:</span>
-                    <span className="text-lg font-bold text-orange-600">RM {total.toFixed(2)}</span>
+              {/* Section 2: Imej Rujukan Kek */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-orange-500 font-semibold text-sm mb-4">2. Imej Rujukan Kek</h2>
+
+                <p className="text-sm font-semibold text-gray-700 mb-2">Jenis Imej Rujukan</p>
+                <div className="flex gap-6 mb-4">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="radio" name="imageMode" value="ai"
+                      checked={form.imageMode === 'ai'}
+                      onChange={() => setForm((prev) => ({ ...prev, imageMode: 'ai' }))}
+                      className="accent-orange-500"
+                    />
+                    Jana Imej AI
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="radio" name="imageMode" value="upload"
+                      checked={form.imageMode === 'upload'}
+                      onChange={() => setForm((prev) => ({ ...prev, imageMode: 'upload' }))}
+                      className="accent-orange-500"
+                    />
+                    Muat Turun Sendiri
+                  </label>
+                </div>
+
+                {/* AI Mode */}
+                {form.imageMode === 'ai' && (
+                  <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Deskripsi Reka Bentuk Kek (Prompt AI)
+                    </label>
+                    <textarea
+                      value={form.aiPrompt}
+                      onChange={(e) => setForm((prev) => ({ ...prev, aiPrompt: e.target.value }))}
+                      placeholder='Contoh: Kek tema Mickey Mouse dengan warna "biru"'
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateAI}
+                      disabled={generatingImage || form.aiPrompt.length < 10}
+                      className="px-4 py-2 border border-orange-500 text-orange-500 text-sm font-medium rounded-lg hover:bg-orange-50 disabled:opacity-50 transition-colors"
+                    >
+                      {generatingImage ? 'Menjana...' : 'Jana Imej'}
+                    </button>
+
+                    {form.aiImageUrl && (
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold text-gray-700 mb-1">
+                          Sila pilih <strong>SATU</strong> imej sebagai rujukan
+                        </p>
+                        <p className="text-xs text-gray-400 mb-2">Imej dipilih untuk dihantar</p>
+                        <div className="border-2 border-orange-400 rounded-lg p-2 inline-block">
+                          <img src={form.aiImageUrl} alt="Imej AI" className="w-48 h-48 object-cover rounded" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Upload Mode */}
+                {form.imageMode === 'upload' && (
+                  <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <label className="block text-sm font-semibold text-gray-700">Muat Naik Imej Rujukan</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      onChange={handleFileUpload}
+                      className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-gray-300 file:text-sm file:font-medium file:bg-white file:text-gray-700 hover:file:bg-gray-50"
+                    />
+                    {form.uploadPreview && (
+                      <div className="mt-3">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Preview Imej</p>
+                        <img src={form.uploadPreview} alt="Pratonton" className="w-48 h-48 object-cover rounded-lg border border-gray-200" />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Section 3: Maklumat Penghantaran */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h2 className="text-orange-500 font-semibold text-sm mb-4">3. Maklumat Penghantaran</h2>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tarikh Ambil/Hantar</label>
+                    <input
+                      type="date"
+                      value={form.tarikhAmbil}
+                      min={getMinDate()}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (isDateClosed(val)) setError('Tarikh tutup. Pilih tarikh lain.')
+                        else { setError(''); setForm((prev) => ({ ...prev, tarikhAmbil: val })) }
+                      }}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Kaedah</label>
+                    <select
+                      value={form.kaedahPenghantaran}
+                      onChange={(e) => setForm((prev) => ({ ...prev, kaedahPenghantaran: e.target.value }))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="pickup">Ambil Sendiri</option>
+                      <option value="delivery">Penghantaran</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* Date Picker */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Tarikh Ambil / Penghantaran
-                  </label>
-                  <input
-                    type="date"
-                    value={form.tarikhAmbil}
-                    min={getMinDate()}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (isDateClosed(val)) {
-                        setError('Tarikh yang dipilih adalah hari tutup. Sila pilih tarikh lain.')
-                      } else {
-                        setError('')
-                        setForm((prev) => ({ ...prev, tarikhAmbil: val }))
-                      }
-                    }}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
-                    required
-                  />
-                  {closedDates.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Tarikh tutup: {closedDates.map((d) => (d.tarikh || d.date || '').split('T')[0]).join(', ')}
-                    </p>
-                  )}
-                </div>
-
-                {/* Delivery Method */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Kaedah Penghantaran
-                  </label>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, kaedahPenghantaran: 'pickup' }))}
-                      className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all ${
-                        form.kaedahPenghantaran === 'pickup'
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      Ambil Sendiri
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, kaedahPenghantaran: 'delivery' }))}
-                      className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all ${
-                        form.kaedahPenghantaran === 'delivery'
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      Penghantaran
-                    </button>
-                  </div>
-
-                  {form.kaedahPenghantaran === 'delivery' && (
+                {form.kaedahPenghantaran === 'delivery' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Alamat Penghantaran
+                      <span className="text-xs text-orange-500 font-normal ml-2">(Jika tidak diisi, alamat asal profil akan diguna)</span>
+                    </label>
                     <textarea
                       value={form.alamatPenghantaran}
                       onChange={(e) => setForm((prev) => ({ ...prev, alamatPenghantaran: e.target.value }))}
-                      placeholder="Masukkan alamat penghantaran"
-                      rows={2}
-                      className="w-full mt-3 px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
-                      required
+                      placeholder="Contoh: Lot 123, Jalan Baru"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
                     />
-                  )}
-                </div>
-
-                {/* Image Reference Section */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Rujukan Imej Kek (Pilihan)
-                  </label>
-                  <div className="flex gap-3 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, imageMode: 'ai' }))}
-                      className={`flex-1 py-2 rounded-full text-xs font-medium transition-all ${
-                        form.imageMode === 'ai'
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      Jana Imej AI
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, imageMode: 'upload' }))}
-                      className={`flex-1 py-2 rounded-full text-xs font-medium transition-all ${
-                        form.imageMode === 'upload'
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      Muat Naik Imej
-                    </button>
                   </div>
+                )}
 
-                  {/* AI Image Generation */}
-                  {form.imageMode === 'ai' && (
-                    <div className="space-y-3">
-                      <textarea
-                        value={form.aiPrompt}
-                        onChange={(e) => setForm((prev) => ({ ...prev, aiPrompt: e.target.value }))}
-                        placeholder="Terangkan reka bentuk kek yang anda inginkan (10-500 aksara)"
-                        rows={3}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
-                      />
-                      <p className="text-xs text-gray-400">{form.aiPrompt.length}/500 aksara</p>
-                      <button
-                        type="button"
-                        onClick={handleGenerateAI}
-                        disabled={generatingImage || form.aiPrompt.length < 10}
-                        className="px-5 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-medium rounded-full transition-colors"
-                      >
-                        {generatingImage ? 'Menjana...' : 'Jana Imej'}
-                      </button>
-                      {form.aiImageUrl && (
-                        <div className="mt-3">
-                          <img
-                            src={form.aiImageUrl}
-                            alt="Imej AI"
-                            className="w-full max-w-xs rounded-xl border border-gray-200"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* File Upload */}
-                  {form.imageMode === 'upload' && (
-                    <div className="space-y-3">
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png"
-                        onChange={handleFileUpload}
-                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-500 hover:file:bg-orange-100"
-                      />
-                      <p className="text-xs text-gray-400">JPEG atau PNG, maksimum 5MB</p>
-                      {form.uploadPreview && (
-                        <div className="mt-3">
-                          <img
-                            src={form.uploadPreview}
-                            alt="Pratonton"
-                            className="w-full max-w-xs rounded-xl border border-gray-200"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Catatan (Pilihan)
-                  </label>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Catatan Tambahan</label>
                   <textarea
                     value={form.catatan}
                     onChange={(e) => setForm((prev) => ({ ...prev, catatan: e.target.value }))}
-                    placeholder="Sebarang permintaan khas..."
+                    placeholder='Contoh: Mohon tulis ucapan "Happy Anniversary Sayang" menggunakan krim berwarna biru tua'
                     rows={3}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
                   />
-                  <p className="text-xs text-gray-400 mt-1">{form.catatan.length}/500 aksara</p>
                 </div>
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full transition-colors text-sm"
-                >
-                  {submitting ? 'Menghantar...' : `Hantar Tempahan — RM ${total.toFixed(2)}`}
-                </button>
-              </form>
-            )}
-          </div>
+                {/* Total & Submit */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div>
+                    <p className="text-xs text-gray-500">Jumlah Harga:</p>
+                    <p className="text-xl font-bold text-orange-500">RM {total.toFixed(2)}</p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-8 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full text-sm transition-colors"
+                  >
+                    {submitting ? 'Menghantar...' : 'Hantar Tempahan'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
         </div>
       </main>
 
-      {/* Chatbot Widget - Lazy loaded */}
+      {/* AI Chatbot Button - Fixed, highly visible */}
       <Suspense fallback={null}>
-        <ChatWidget
-          formState={form}
-          categories={categories}
-          onFormAction={handleChatbotFormAction}
-        />
+        <ChatWidget formState={form} categories={categories} onFormAction={handleChatbotFormAction} />
       </Suspense>
+
+      {/* Chatbot helper label */}
+      <div className="fixed bottom-20 right-4 z-40 pointer-events-none">
+        <div className="bg-orange-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg animate-bounce">
+          💬 Bantuan AI
+        </div>
+      </div>
     </div>
   )
 }
