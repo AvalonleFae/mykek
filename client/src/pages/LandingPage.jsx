@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import LoginCard from '../components/LoginCard'
+import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 
 export default function LandingPage() {
+  const { isAuthenticated, user } = useAuth()
+  const navigate = useNavigate()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'pelanggan') {
+        navigate('/pelanggan', { replace: true })
+      } else if (user.role === 'peniaga') {
+        navigate('/peniaga', { replace: true })
+      }
+    }
+  }, [isAuthenticated, user, navigate])
+
   const [shopInfo, setShopInfo] = useState({
     namaKedai: 'Zuraida Patisserie',
     noTelefonKedai: '0123456789',

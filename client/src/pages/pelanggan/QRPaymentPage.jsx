@@ -1,9 +1,55 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/Header'
+import api from '../../services/api'
 
 export default function QRPaymentPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [proofFile, setProofFile] = useState(null)
+  const [proofPreview, setProofPreview] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      setError('Hanya fail JPEG atau PNG dibenarkan.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Saiz fail tidak boleh melebihi 5MB.')
+      return
+    }
+    setError('')
+    setProofFile(file)
+    setProofPreview(URL.createObjectURL(file))
+  }
+
+  const handleSubmit = async () => {
+    if (!proofFile) {
+      setError('Sila muat naik bukti pembayaran.')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+    try {
+      // Upload proof of payment image
+      const fd = new FormData()
+      fd.append('imej', proofFile)
+      fd.append('tempahanId', id)
+      await api.post('/api/pelanggan/tempahan/muat-naik-imej', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    } catch {
+      // Non-blocking — still redirect even if upload fails
+    } finally {
+      setUploading(false)
+      navigate('/pelanggan/tempahan')
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -17,30 +63,59 @@ export default function QRPaymentPage() {
               Sila imbas kod QR untuk membuat bayaran
             </p>
 
-            {/* QR Code */}
-            <div className="flex justify-center mb-6">
+            {/* QR Code Image */}
+            <div className="flex justify-center mb-4">
               <img
-                src="https://placehold.co/300x300?text=QR+Code+Bayaran"
+                src="/qr-payment.jpeg"
                 alt="Kod QR Bayaran"
-                className="w-64 h-64 rounded-xl border border-gray-200"
+                className="w-64 h-64 rounded-xl border border-gray-200 object-contain"
               />
             </div>
 
             {/* Order Info */}
-            <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 mb-6">
+            <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 mb-6">
               <p className="text-sm text-gray-600">Tempahan #{id}</p>
+            </div>
+
+            {/* Upload Proof of Payment */}
+            <div className="text-left mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Bukti Pembayaran
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Sila muat naik tangkap layar (screenshot) bukti pembayaran anda.
+              </p>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleFileChange}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border file:border-gray-300 file:text-sm file:font-medium file:bg-white file:text-gray-700 hover:file:bg-gray-50"
+              />
+              {proofPreview && (
+                <div className="mt-3">
+                  <img
+                    src={proofPreview}
+                    alt="Bukti Pembayaran"
+                    className="w-full max-w-xs rounded-lg border border-gray-200 mx-auto"
+                  />
+                </div>
+              )}
+              {error && (
+                <p className="text-xs text-red-500 mt-2">{error}</p>
+              )}
             </div>
 
             {/* Done Button */}
             <button
-              onClick={() => navigate('/pelanggan/tempahan')}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm"
+              onClick={handleSubmit}
+              disabled={uploading || !proofFile}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed text-white font-semibold rounded-full transition-colors text-sm"
             >
-              Sudah Bayar
+              {uploading ? 'Menghantar...' : 'Sudah Bayar'}
             </button>
 
             <p className="text-xs text-gray-400 mt-4">
-              Selepas pembayaran disahkan, status tempahan akan dikemaskini secara automatik.
+              Selepas pembayaran disahkan, status tempahan akan dikemaskini oleh peniaga.
             </p>
           </div>
         </div>
