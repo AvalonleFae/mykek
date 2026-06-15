@@ -88,7 +88,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
   - Ensure all tests pass, ask the user if questions arise.
 
 - [~] 4. Implement cake specification management (Merchant)
-  - [ ] 4.1 Implement cake spec category CRUD endpoints
+  - [-] 4.1 Implement cake spec category CRUD endpoints
     - Create `GET /api/peniaga/kategori-spesifikasi` — list all categories (active and inactive)
     - Create `POST /api/peniaga/kategori-spesifikasi` — create category with name/description validation and uniqueness check
     - Create `PUT /api/peniaga/kategori-spesifikasi/:id` — update category
@@ -96,7 +96,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - Implement `CakeSpecService` with validation logic
     - _Requirements: 13.1, 13.3, 13.4, 13.6, 13.7_
 
-  - [ ] 4.2 Implement cake spec option CRUD endpoints
+  - [-] 4.2 Implement cake spec option CRUD endpoints
     - Create `GET /api/peniaga/pilihan-spesifikasi/:kategoriId` — list options for a category
     - Create `POST /api/peniaga/pilihan-spesifikasi` — create option with name uniqueness within category, price validation (RM 0.00-9999.99)
     - Create `PUT /api/peniaga/pilihan-spesifikasi/:id` — update option
@@ -118,7 +118,7 @@ This implementation plan breaks down the MyKek cake ordering system into increme
     - **Validates: Requirements 4.1**
 
 - [~] 5. Implement unavailability calendar management
-  - [ ] 5.1 Implement closed date CRUD endpoints
+  - [-] 5.1 Implement closed date CRUD endpoints
     - Create `GET /api/peniaga/tarikh-tutup` — list all closed dates
     - Create `POST /api/peniaga/tarikh-tutup` — add closed date with validation (future/today only, not already closed)
     - Create `DELETE /api/peniaga/tarikh-tutup/:id` — remove closed date

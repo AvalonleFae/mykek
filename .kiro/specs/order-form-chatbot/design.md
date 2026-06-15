@@ -19,7 +19,7 @@ The Order Form Chatbot (Pembantu Pesanan) is an AI-powered conversational assist
 | Frontend | React.lazy + Suspense | Lazy-loading chatbot component |
 | Frontend | React Context (ChatContext) | Chat session state management |
 | Backend | New Express route `/api/pelanggan/chatbot` | Chatbot message endpoint |
-| Backend | AI Language Model API (e.g., OpenAI Chat Completions) | Response generation |
+| Backend | AI Language Model API (Google Gemini API) | Response generation |
 
 ## Architecture
 

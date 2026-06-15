@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS PilihanSpesifikasiKek (
-  pilihanId INT AUTO_INCREMENT PRIMARY KEY,
-  kategoriId INT NOT NULL,
+  pilihanId VARCHAR(10) PRIMARY KEY,
+  kategoriId VARCHAR(10) NOT NULL,
   nama VARCHAR(100) NOT NULL,
   penerangan VARCHAR(500),
   hargaTambahan DECIMAL(8,2) NOT NULL DEFAULT 0.00,

@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS ButiranTempahan (
-  butiranId INT AUTO_INCREMENT PRIMARY KEY,
-  tempahanId INT NOT NULL,
-  kategoriId INT NOT NULL,
-  pilihanId INT NOT NULL,
+  butiranId VARCHAR(10) PRIMARY KEY,
+  tempahanId VARCHAR(10) NOT NULL,
+  kategoriId VARCHAR(10) NOT NULL,
+  pilihanId VARCHAR(10) NOT NULL,
   namaKategori VARCHAR(100) NOT NULL,
   namaPilihan VARCHAR(100) NOT NULL,
   hargaTambahan DECIMAL(8,2) NOT NULL DEFAULT 0.00,

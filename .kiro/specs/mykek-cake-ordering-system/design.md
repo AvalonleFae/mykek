@@ -28,7 +28,7 @@ Key design considerations:
 | ORM | mysql2 (raw parameterized queries) |
 | Authentication | express-session + bcrypt |
 | File Upload | Multer |
-| AI Image | External AI API (e.g., OpenAI DALL-E or Stability AI) |
+| AI Image | Google Gemini API (Imagen) |
 
 ## Architecture
 

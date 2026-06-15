@@ -3,6 +3,7 @@ import pool from '../config/db.js';
 import { validatePhoneNumber, validateNameRegistration } from '../utils/validators.js';
 import { buildErrorResponse } from '../utils/errorResponse.js';
 import { ERROR_CODES } from '../utils/constants.js';
+import { generatePelangganId } from '../utils/idGenerator.js';
 
 /**
  * In-memory login attempt tracker.
@@ -149,7 +150,7 @@ export async function loginMerchant({ namaPenggunaAdmin, kataLaluan }) {
  * @param {{ noTelefon: string, nama: string }} data - Registration data
  * @returns {Promise<{ berjaya: true, pelangganId: number } | { ralat: true, mesej: string, medan: string|null, kod: string|null }>}
  */
-export async function registerCustomer({ noTelefon, nama }) {
+export async function registerCustomer({ noTelefon, nama, alamat }) {
   // Validate phone number
   const phoneResult = validatePhoneNumber(noTelefon);
   if (!phoneResult.sah) {
@@ -186,15 +187,18 @@ export async function registerCustomer({ noTelefon, nama }) {
     );
   }
 
+  // Generate next pelanggan ID
+  const pelangganId = await generatePelangganId();
+
   // Insert new customer
-  const [result] = await pool.execute(
-    'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-    [noTelefon.trim(), nama.trim()]
+  await pool.execute(
+    'INSERT INTO Pelanggan (pelangganId, noTelefon, nama, alamat) VALUES (?, ?, ?, ?)',
+    [pelangganId, noTelefon.trim(), nama.trim(), alamat ? alamat.trim() : null]
   );
 
   return {
     berjaya: true,
-    pelangganId: result.insertId,
+    pelangganId,
   };
 }
 

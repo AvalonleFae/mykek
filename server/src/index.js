@@ -7,6 +7,18 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import pool from './config/db.js';
 import authRoutes from './routes/auth.js';
+import cakeSpecRoutes, { optionRouter as cakeSpecOptionRoutes } from './routes/peniaga/cakeSpec.js';
+import peniagaClosedDateRoutes from './routes/peniaga/closedDate.js';
+import peniagaOrderRoutes from './routes/peniaga/order.js';
+import peniagaReportRoutes from './routes/peniaga/report.js';
+import pelangganClosedDateRoutes from './routes/pelanggan/closedDate.js';
+import pelangganCakeSpecRoutes from './routes/pelanggan/cakeSpec.js';
+import pelangganOrderRoutes from './routes/pelanggan/order.js';
+import pelangganProfileRoutes from './routes/pelanggan/profile.js';
+import peniagaBusinessInfoRoutes from './routes/peniaga/businessInfo.js';
+import publicRoutes from './routes/public.js';
+import pelangganImageRoutes from './routes/pelanggan/image.js';
+import pelangganChatbotRoutes from './routes/pelanggan/chatbot.js';
 
 dotenv.config();
 
@@ -55,6 +67,19 @@ app.use(session({
 
 // --- Routes ---
 app.use('/api/auth', authRoutes);
+app.use('/api/peniaga/kategori-spesifikasi', cakeSpecRoutes);
+app.use('/api/peniaga/pilihan-spesifikasi', cakeSpecOptionRoutes);
+app.use('/api/peniaga/tarikh-tutup', peniagaClosedDateRoutes);
+app.use('/api/peniaga/tempahan', peniagaOrderRoutes);
+app.use('/api/peniaga/laporan-jualan', peniagaReportRoutes);
+app.use('/api/pelanggan/tarikh-tutup', pelangganClosedDateRoutes);
+app.use('/api/pelanggan/spesifikasi-kek', pelangganCakeSpecRoutes);
+app.use('/api/pelanggan/tempahan', pelangganImageRoutes);
+app.use('/api/pelanggan/tempahan', pelangganOrderRoutes);
+app.use('/api/pelanggan/profil', pelangganProfileRoutes);
+app.use('/api/peniaga/profil-perniagaan', peniagaBusinessInfoRoutes);
+app.use('/api/awam', publicRoutes);
+app.use('/api/pelanggan/chatbot', pelangganChatbotRoutes);
 
 // --- Health check route ---
 app.get('/api/health', (req, res) => {

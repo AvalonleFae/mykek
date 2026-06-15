@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS ImejTempahan (
-  imejId INT AUTO_INCREMENT PRIMARY KEY,
-  tempahanId INT NOT NULL,
+  imejId VARCHAR(10) PRIMARY KEY,
+  tempahanId VARCHAR(10) NOT NULL,
   jenisImej ENUM('AI','Muat Naik') NOT NULL,
   urlImej VARCHAR(500) NOT NULL,
   promptAI VARCHAR(500),
