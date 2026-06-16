@@ -2,3 +2,6 @@ node_modules/
 .env
 uploads/images/*
 !uploads/images/.gitkeep
+
+# WhatsApp Web session data
+.wwebjs_auth/

@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import { authMiddleware, roleGuard } from '../../middleware/auth.js';
 import { generateAIImage, uploadImage } from '../../services/imageService.js';
 import { buildErrorResponse } from '../../utils/errorResponse.js';
+import pool from '../../config/db.js';
+import { generateImejId } from '../../utils/idGenerator.js';
+import { IMAGE_TYPE } from '../../utils/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -191,6 +194,91 @@ router.post('/simpan-imej-ai', async (req, res) => {
       buildErrorResponse('Ralat semasa menyimpan imej AI.')
     );
   }
+});
+
+/**
+ * POST /api/pelanggan/tempahan/muat-naik-resit
+ * Upload a payment receipt image for an order.
+ */
+router.post('/muat-naik-resit', (req, res) => {
+  upload.single('imej')(req, res, async (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json(
+          buildErrorResponse('Saiz fail melebihi had maksimum 5MB.', 'imej', 'SAIZ_FAIL_MELEBIHI')
+        );
+      }
+      if (err.message === 'FORMAT_TIDAK_SAH') {
+        return res.status(400).json(
+          buildErrorResponse('Format fail tidak disokong. Sila gunakan format JPEG atau PNG.', 'imej', 'FORMAT_TIDAK_SAH')
+        );
+      }
+      console.error('Receipt upload error:', err);
+      return res.status(500).json(
+        buildErrorResponse('Ralat semasa memuat naik resit. Sila cuba lagi.')
+      );
+    }
+
+    try {
+      const { tempahanId } = req.body;
+
+      if (!req.file) {
+        return res.status(400).json(
+          buildErrorResponse('Sila pilih fail resit untuk dimuat naik.', 'imej', 'MEDAN_KOSONG')
+        );
+      }
+      if (!tempahanId) {
+        return res.status(400).json(
+          buildErrorResponse('ID tempahan diperlukan.', 'tempahanId', 'MEDAN_KOSONG')
+        );
+      }
+
+      const orderId = String(tempahanId).trim();
+
+      // Verify order exists and belongs to this customer
+      const [orders] = await pool.execute(
+        'SELECT tempahanId FROM Tempahan WHERE tempahanId = ? AND pelangganId = ?',
+        [orderId, req.session.userId]
+      );
+      if (orders.length === 0) {
+        return res.status(404).json(
+          buildErrorResponse('Tempahan tidak ditemui.', 'tempahanId', 'TIDAK_DITEMUI')
+        );
+      }
+
+      const imageUrl = `/uploads/images/${req.file.filename}`;
+
+      // Check if receipt already exists for this order — replace it
+      const [existing] = await pool.execute(
+        'SELECT imejId FROM ImejTempahan WHERE tempahanId = ? AND jenisImej = ?',
+        [orderId, IMAGE_TYPE.RESIT]
+      );
+
+      if (existing.length > 0) {
+        await pool.execute(
+          'UPDATE ImejTempahan SET urlImej = ?, tarikhMuatNaik = NOW() WHERE imejId = ?',
+          [imageUrl, existing[0].imejId]
+        );
+      } else {
+        const imejId = await generateImejId();
+        await pool.execute(
+          'INSERT INTO ImejTempahan (imejId, tempahanId, jenisImej, urlImej, tarikhMuatNaik) VALUES (?, ?, ?, ?, NOW())',
+          [imejId, orderId, IMAGE_TYPE.RESIT, imageUrl]
+        );
+      }
+
+      return res.status(200).json({
+        ralat: false,
+        mesej: 'Resit berjaya dimuat naik.',
+        imageUrl,
+      });
+    } catch (error) {
+      console.error('Receipt upload service error:', error);
+      return res.status(500).json(
+        buildErrorResponse('Ralat semasa memuat naik resit. Sila cuba lagi.')
+      );
+    }
+  });
 });
 
 export default router;
