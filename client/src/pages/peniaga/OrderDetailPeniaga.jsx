@@ -5,7 +5,7 @@ import ErrorMessage from '../../components/shared/ErrorMessage'
 import SuccessMessage from '../../components/shared/SuccessMessage'
 import api from '../../services/api'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = ''
 function getImageUrl(url) { if (!url) return ''; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; }
 
 const STATUS_FLOW = [

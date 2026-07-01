@@ -1,9 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  // Use relative URL so requests go through the reverse proxy in production.
-  // In local dev, Vite's proxy (vite.config.js) handles forwarding to localhost:3001.
-  baseURL: '/api',
+  // Empty baseURL — all call sites already include the full /api/... path.
+  // In production, Caddy proxies /api/* to Node. In dev, Vite proxies it (vite.config.js).
+  baseURL: '/',
   withCredentials: true,
 })
 

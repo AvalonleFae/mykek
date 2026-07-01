@@ -1,12 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../services/api'
 
 const AuthContext = createContext(null)
-
-const api = axios.create({
-  baseURL: 'http://localhost:3001',
-  withCredentials: true,
-})
 
 // Restore user from localStorage on init
 function getStoredUser() {

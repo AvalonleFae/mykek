@@ -4,7 +4,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import ErrorMessage from '../../components/shared/ErrorMessage'
 import api from '../../services/api'
 
-const API_BASE = 'http://localhost:3001'
+const API_BASE = ''
 
 // Helper to get full image URL
 function getImageUrl(urlImej) {
