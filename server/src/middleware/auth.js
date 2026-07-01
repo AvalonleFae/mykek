@@ -2,12 +2,6 @@ import { buildErrorResponse } from '../utils/errorResponse.js';
 import { ERROR_CODES } from '../utils/constants.js';
 
 /**
- * Session timeout constants (in milliseconds).
- */
-const MERCHANT_SESSION_TIMEOUT = 60 * 60 * 1000; // 60 minutes
-const CUSTOMER_SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
-
-/**
  * Authentication middleware.
  * Checks that a valid session exists with userId and role.
  * Returns 401 if unauthenticated or session has expired.
@@ -19,34 +13,6 @@ export function authMiddleware(req, res, next) {
       buildErrorResponse('Sila log masuk.', null, ERROR_CODES.SESI_TAMAT)
     );
   }
-
-  // Check session inactivity timeout based on role
-  const now = Date.now();
-  const lastAccess = req.session.lastAccess || req.session.cookie._expires?.getTime();
-
-  if (lastAccess) {
-    const timeout = req.session.role === 'peniaga'
-      ? MERCHANT_SESSION_TIMEOUT
-      : CUSTOMER_SESSION_TIMEOUT;
-
-    const elapsed = now - lastAccess;
-
-    if (elapsed > timeout) {
-      // Session has expired due to inactivity
-      return req.session.destroy((err) => {
-        if (err) {
-          console.error('Session destroy error:', err);
-        }
-        res.clearCookie('mykek_session');
-        return res.status(401).json(
-          buildErrorResponse('Sesi anda telah tamat. Sila log masuk semula.', null, ERROR_CODES.SESI_TAMAT)
-        );
-      });
-    }
-  }
-
-  // Update last access time for inactivity tracking
-  req.session.lastAccess = now;
 
   next();
 }

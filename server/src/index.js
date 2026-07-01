@@ -30,6 +30,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust the first proxy (Caddy) so that req.protocol reflects HTTPS
+// and secure cookies are sent correctly.
+app.set('trust proxy', 1);
+
 // --- Middleware ---
 
 // CORS - allow requests from the Vite dev server
@@ -59,6 +63,7 @@ app.use(session({
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Trust the reverse proxy for secure cookies
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
