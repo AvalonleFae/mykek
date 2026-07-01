@@ -21,35 +21,55 @@ async function runMigrations() {
   try {
     console.log('🔗 Connected to MariaDB database: mykek');
 
-    // Run migration files
+    // Ensure migration tracking table exists
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS _migrations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL UNIQUE,
+        appliedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Get already-applied migrations
+    const [appliedRows] = await connection.query('SELECT filename FROM _migrations');
+    const applied = new Set(appliedRows.map(r => r.filename));
+
+    // Run pending migration files
     const migrationsDir = join(__dirname, 'migrations');
     const migrationFiles = (await readdir(migrationsDir))
       .filter(f => f.endsWith('.sql'))
       .sort();
 
-    console.log(`\n📦 Running ${migrationFiles.length} migration(s)...\n`);
+    const pending = migrationFiles.filter(f => !applied.has(f));
 
-    for (const file of migrationFiles) {
-      const sql = await readFile(join(migrationsDir, file), 'utf-8');
-      await connection.query(sql);
-      console.log(`  ✅ ${file}`);
+    if (pending.length === 0) {
+      console.log('\n✅ No new migrations to run.\n');
+    } else {
+      console.log(`\n📦 Running ${pending.length} new migration(s)...\n`);
+      for (const file of pending) {
+        const sql = await readFile(join(migrationsDir, file), 'utf-8');
+        await connection.query(sql);
+        await connection.query('INSERT INTO _migrations (filename) VALUES (?)', [file]);
+        console.log(`  ✅ ${file}`);
+      }
     }
 
-    // Run seed files
+    // Run seed files (seeds must be idempotent — use INSERT IGNORE or ON DUPLICATE KEY)
     const seedsDir = join(__dirname, 'seeds');
     const seedFiles = (await readdir(seedsDir))
       .filter(f => f.endsWith('.sql'))
       .sort();
 
-    console.log(`\n🌱 Running ${seedFiles.length} seed(s)...\n`);
-
-    for (const file of seedFiles) {
-      const sql = await readFile(join(seedsDir, file), 'utf-8');
-      await connection.query(sql);
-      console.log(`  ✅ ${file}`);
+    if (seedFiles.length > 0) {
+      console.log(`\n🌱 Running ${seedFiles.length} seed(s)...\n`);
+      for (const file of seedFiles) {
+        const sql = await readFile(join(seedsDir, file), 'utf-8');
+        await connection.query(sql);
+        console.log(`  ✅ ${file}`);
+      }
     }
 
-    console.log('\n🎉 All migrations and seeds completed successfully!\n');
+    console.log('\n🎉 Database up to date!\n');
   } catch (error) {
     console.error('\n❌ Migration failed:', error.message);
     process.exit(1);
