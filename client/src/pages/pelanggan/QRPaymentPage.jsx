@@ -1,15 +1,21 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import Header from '../../components/Header'
 import api from '../../services/api'
 
 export default function QRPaymentPage() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const [proofFile, setProofFile] = useState(null)
   const [proofPreview, setProofPreview] = useState('')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+
+  // Get order data passed from the form (for new orders)
+  const orderState = location.state || {}
+  const { orderPayload, uploadedFile, aiImageUrl, aiPrompt } = orderState
+  const isNewOrder = id === 'baharu' && orderPayload
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -35,19 +41,60 @@ export default function QRPaymentPage() {
 
     setUploading(true)
     setError('')
+
     try {
-      // Upload proof of payment image
-      const fd = new FormData()
-      fd.append('imej', proofFile)
-      fd.append('tempahanId', id)
-      await api.post('/api/pelanggan/tempahan/muat-naik-imej', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-    } catch {
-      // Non-blocking — still redirect even if upload fails
+      let orderId = id
+
+      // If this is a new order, create it first
+      if (isNewOrder) {
+        const res = await api.post('/api/pelanggan/tempahan', orderPayload)
+        orderId = res.data.tempahanId || res.data.data?.tempahanId || res.data.id
+
+        if (!orderId) {
+          setError('Gagal mencipta tempahan.')
+          setUploading(false)
+          return
+        }
+
+        // Save uploaded cake reference image if provided
+        if (uploadedFile) {
+          try {
+            const fd = new FormData()
+            fd.append('imej', uploadedFile)
+            fd.append('tempahanId', orderId)
+            await api.post('/api/pelanggan/tempahan/muat-naik-imej', fd, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            })
+          } catch { /* non-blocking */ }
+        }
+
+        // Save AI-generated image if provided
+        if (aiImageUrl) {
+          try {
+            await api.post('/api/pelanggan/tempahan/simpan-imej-ai', {
+              tempahanId: orderId,
+              urlImej: aiImageUrl,
+              promptAI: aiPrompt,
+            })
+          } catch { /* non-blocking */ }
+        }
+      }
+
+      // Upload receipt
+      try {
+        const fd = new FormData()
+        fd.append('imej', proofFile)
+        fd.append('tempahanId', orderId)
+        await api.post('/api/pelanggan/tempahan/muat-naik-resit', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      } catch { /* non-blocking */ }
+
+      navigate('/pelanggan/tempahan')
+    } catch (err) {
+      setError(err.response?.data?.mesej || 'Gagal menghantar tempahan. Sila cuba lagi.')
     } finally {
       setUploading(false)
-      navigate('/pelanggan/tempahan')
     }
   }
 
@@ -74,7 +121,9 @@ export default function QRPaymentPage() {
 
             {/* Order Info */}
             <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 mb-6">
-              <p className="text-sm text-gray-600">Tempahan #{id}</p>
+              <p className="text-sm text-gray-600">
+                {isNewOrder ? 'Tempahan Baharu' : `Tempahan #${id}`}
+              </p>
             </div>
 
             {/* Upload Proof of Payment */}

@@ -170,35 +170,17 @@ export default function OrderFormPage() {
         alamatPenghantaran: deliveryAddress,
         catatan: form.catatan || undefined,
       }
-      const res = await api.post('/api/pelanggan/tempahan', payload)
-      const orderId = res.data.tempahanId || res.data.data?.tempahanId || res.data.id
-      console.log('Order created, response:', res.data, 'orderId:', orderId)
 
-      // Save uploaded image if file was selected
-      if (form.uploadedFile && orderId) {
-        try {
-          const fd = new FormData()
-          fd.append('imej', form.uploadedFile)
-          fd.append('tempahanId', orderId)
-          await api.post('/api/pelanggan/tempahan/muat-naik-imej', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-        } catch { /* non-blocking */ }
-      }
-
-      // Save AI-generated image URL if available
-      if (form.aiImageUrl && orderId) {
-        try {
-          await api.post('/api/pelanggan/tempahan/simpan-imej-ai', {
-            tempahanId: orderId,
-            urlImej: form.aiImageUrl,
-            promptAI: form.aiPrompt,
-          })
-        } catch (imgErr) {
-          console.error('Failed to save AI image:', imgErr.response?.data || imgErr.message)
-        }
-      }
-
+      // Pass order data to payment page — order will be created after payment proof is uploaded
       clearPersistedData()
-      navigate(`/pelanggan/bayaran/${orderId}`)
+      navigate('/pelanggan/bayaran/baharu', {
+        state: {
+          orderPayload: payload,
+          uploadedFile: form.uploadedFile || null,
+          aiImageUrl: form.aiImageUrl || null,
+          aiPrompt: form.aiPrompt || null,
+        }
+      })
     } catch (err) {
       setError(err.response?.data?.mesej || 'Gagal menghantar tempahan.')
     } finally {

@@ -129,6 +129,7 @@ export default function OrderDetailPeniaga() {
 
   const nextStatus = order ? getNextStatus(order.statusTempahan) : null
   const currentStepIndex = order ? getStatusIndex(order.statusTempahan) : 0
+  const isDitolak = order?.statusTempahan === 'Ditolak'
 
   if (loading) {
     return (
@@ -237,7 +238,9 @@ export default function OrderDetailPeniaga() {
             </div>
 
             {/* Next status action */}
-            {order.statusTempahan !== 'Selesai' ? (
+            {isDitolak ? (
+              <p className="text-sm text-red-500 font-medium">Tempahan ini telah ditolak.</p>
+            ) : order.statusTempahan !== 'Selesai' ? (
               <div className="space-y-3">
                 <div>
                   <label className="text-sm text-gray-600">Tukar Status Kepada:</label>
@@ -271,10 +274,25 @@ export default function OrderDetailPeniaga() {
             {/* Current payment status */}
             <div className="mb-4">
               <label className="text-sm text-gray-600">Status Semasa:</label>
-              <div className="mt-1">
+              <div className="mt-1 flex items-center gap-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPaymentColor(order.statusBayaran)}`}>
                   {order.statusBayaran || 'Belum Dibayar'}
                 </span>
+                {/* View Receipt Button */}
+                {order.imej && order.imej.find(img => img.jenisImej === 'Resit') && (
+                  <a
+                    href={getImageUrl(order.imej.find(img => img.jenisImej === 'Resit').urlImej)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-full hover:bg-orange-100 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                    Lihat Resit
+                  </a>
+                )}
               </div>
             </div>
 
@@ -285,7 +303,8 @@ export default function OrderDetailPeniaga() {
                 <select
                   value={selectedPayment}
                   onChange={(e) => setSelectedPayment(e.target.value)}
-                  className="mt-1 w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  disabled={isDitolak}
+                  className="mt-1 w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                   {PAYMENT_STATUSES.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -294,8 +313,8 @@ export default function OrderDetailPeniaga() {
               </div>
               <button
                 onClick={handlePaymentUpdate}
-                disabled={paymentLoading}
-                className="px-6 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors disabled:opacity-50"
+                disabled={paymentLoading || isDitolak}
+                className="px-6 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {paymentLoading ? 'Memproses...' : 'Simpan'}
               </button>

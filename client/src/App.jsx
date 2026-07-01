@@ -15,6 +15,7 @@ import SpecManagementPage from './pages/peniaga/SpecManagementPage'
 import CalendarPage from './pages/peniaga/CalendarPage'
 import ReportPage from './pages/peniaga/ReportPage'
 import BusinessInfoPage from './pages/peniaga/BusinessInfoPage'
+import WhatsAppSettingsPage from './pages/peniaga/WhatsAppSettingsPage'
 
 function App() {
   return (
@@ -123,6 +124,14 @@ function App() {
             element={
               <ProtectedRoute role="peniaga">
                 <BusinessInfoPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/peniaga/whatsapp"
+            element={
+              <ProtectedRoute role="peniaga">
+                <WhatsAppSettingsPage />
               </ProtectedRoute>
             }
           />
