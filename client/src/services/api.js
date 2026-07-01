@@ -1,7 +1,9 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001',
+  // Use relative URL so requests go through the reverse proxy in production.
+  // In local dev, Vite's proxy (vite.config.js) handles forwarding to localhost:3001.
+  baseURL: '/api',
   withCredentials: true,
 })
 

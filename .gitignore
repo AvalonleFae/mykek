@@ -1,0 +1,13 @@
+# Deploy scripts contain secrets — never commit these
+deploy/setup-server.sh
+deploy/setup-db.sh
+deploy/inject-qr-route.py
+deploy/remove-qr-route.py
+deploy/qr-helper.js
+
+# Keep the git-based deploy script (no secrets in it)
+!deploy/deploy.sh
+
+# OS
+.DS_Store
+Thumbs.db
