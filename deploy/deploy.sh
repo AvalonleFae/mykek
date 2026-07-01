@@ -44,7 +44,9 @@ echo "  ✅ Migrations done"
 
 # ── 4. Build frontend ─────────────────────────────────────
 echo "[4/5] Building frontend..."
-npm ci --prefix "$APP_DIR/client" 2>&1 | grep -v "^npm warn"
+# Use npm install (not ci) to handle lockfile drift across Node versions.
+# Dev deps are needed here because vite/tailwind are devDependencies.
+npm install --prefix "$APP_DIR/client" 2>&1 | grep -v "^npm warn"
 npm run build --prefix "$APP_DIR/client"
 # Caddy serves from /var/www/mykek/public
 rm -rf "$APP_DIR/public"
