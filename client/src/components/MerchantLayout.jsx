@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Kalendar Cuti', path: '/peniaga/kalendar' },
   { label: 'Laporan dan Analisis', path: '/peniaga/laporan' },
   { label: 'Kemas kini Perniagaan', path: '/peniaga/perniagaan' },
+  { label: 'Sambung ke WhatsApp', path: '/peniaga/whatsapp' },
 ]
 
 export default function MerchantLayout({ children, title, subtitle }) {

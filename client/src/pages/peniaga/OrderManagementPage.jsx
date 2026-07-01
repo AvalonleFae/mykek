@@ -167,7 +167,7 @@ export default function OrderManagementPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-6 py-3 font-medium text-gray-600">ID / Nama Pelanggan</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Perincian Kek</th>
+                <th className="text-left px-6 py-3 font-medium text-gray-600">Jumlah Bayaran</th>
                 <th className="text-left px-6 py-3 font-medium text-gray-600">Tarikh Diperlukan</th>
                 <th className="text-left px-6 py-3 font-medium text-gray-600">Kaedah</th>
                 <th className="text-left px-6 py-3 font-medium text-gray-600">Status Tempahan</th>
@@ -185,7 +185,19 @@ export default function OrderManagementPage() {
                     <p className="text-xs text-gray-500">#{order.tempahanId}</p>
                   </td>
                   <td className="px-6 py-4 text-gray-700">
-                    {getButiranSummary(order)}
+                    <div>
+                      {getButiranSummary(order)}
+                      {order.resitUrl && (
+                        <a
+                          href={getImageUrl(order.resitUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block mt-1 text-xs text-orange-600 hover:text-orange-700 font-medium"
+                        >
+                          📄 Lihat Resit
+                        </a>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-700">
                     {order.tarikhAmbil ? new Date(order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}

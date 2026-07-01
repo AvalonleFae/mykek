@@ -3,7 +3,7 @@ import { authMiddleware, roleGuard } from '../../middleware/auth.js';
 import { createOrder, getCustomerOrders, getCustomerOrderDetail, cancelOrder } from '../../services/orderService.js';
 import { buildErrorResponse } from '../../utils/errorResponse.js';
 import { ERROR_CODES } from '../../utils/constants.js';
-import { notifyOrderCreated, notifyMerchantNewOrder } from '../../services/whatsappService.js';
+import { notifyOrderCreated, notifyMerchantNewOrder, notifyOrderCancelled, notifyMerchantOrderCancelled } from '../../services/whatsappService.js';
 import pool from '../../config/db.js';
 
 const router = Router();
@@ -153,6 +153,20 @@ router.put('/:id/batal', async (req, res) => {
     if (result.ralat) {
       const statusCode = result.kod === ERROR_CODES.TIDAK_DITEMUI ? 404 : 400;
       return res.status(statusCode).json(result);
+    }
+
+    // Fire-and-forget WhatsApp cancellation notification
+    try {
+      const [custRows] = await pool.execute(
+        'SELECT nama, noTelefon FROM Pelanggan WHERE pelangganId = ?',
+        [pelangganId]
+      );
+      if (custRows.length > 0) {
+        notifyOrderCancelled({ tempahanId }, custRows[0]);
+        notifyMerchantOrderCancelled({ tempahanId }, custRows[0].nama);
+      }
+    } catch (waErr) {
+      console.error('[WhatsApp] Error sending cancellation notification:', waErr.message);
     }
 
     return res.status(200).json(result);

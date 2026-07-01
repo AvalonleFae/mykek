@@ -169,6 +169,47 @@ export function formatStatusChange(tempahan, namaPelanggan) {
 }
 
 /**
+ * Format order cancellation notification for customer.
+ * @param {object} tempahan - Order object with tempahanId
+ * @param {string} namaPelanggan - Customer name
+ * @returns {string} Formatted message
+ */
+export function formatOrderCancelled(tempahan, namaPelanggan) {
+  const message = [
+    HEADER,
+    '',
+    `Hai ${namaPelanggan},`,
+    '',
+    `Tempahan anda (${tempahan.tempahanId}) telah berjaya dibatalkan. ❌`,
+    '',
+    'Jika ini adalah kesilapan, sila buat tempahan baharu. Terima kasih!',
+  ].join('\n');
+
+  return truncateMessage(message);
+}
+
+/**
+ * Format order cancellation notification for merchant.
+ * @param {object} tempahan - Order object with tempahanId
+ * @param {string} namaPelanggan - Customer name
+ * @returns {string} Formatted message
+ */
+export function formatOrderCancelledMerchant(tempahan, namaPelanggan) {
+  const message = [
+    HEADER,
+    '',
+    'Pembatalan Tempahan 🔔',
+    '',
+    `📋 No. Tempahan: ${tempahan.tempahanId}`,
+    `👤 Pelanggan: ${namaPelanggan}`,
+    '',
+    'Pelanggan telah membatalkan tempahan ini.',
+  ].join('\n');
+
+  return truncateMessage(message);
+}
+
+/**
  * Format OTP verification message for customer.
  * @param {string} code - 6-digit OTP code
  * @param {string} namaPelanggan - Customer name

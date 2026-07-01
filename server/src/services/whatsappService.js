@@ -16,6 +16,8 @@ import {
   formatNewOrderMerchant,
   formatStatusChange,
   formatOTPMessage,
+  formatOrderCancelled,
+  formatOrderCancelledMerchant,
 } from './messageFormatter.js';
 import pool from '../config/db.js';
 
@@ -438,6 +440,56 @@ export function notifyStatusChange(tempahan, pelanggan) {
       await sendMessage(pelanggan.noTelefon, message);
     } catch (err) {
       console.error(`[WhatsApp] Gagal hantar notifikasi status (${tempahan.statusTempahan}) untuk tempahan ${tempahan.tempahanId}:`, err.message);
+    }
+  })();
+}
+
+/**
+ * Notify customer that their order has been cancelled.
+ * Fire-and-forget, NO retry.
+ * @param {object} tempahan - Order object with tempahanId
+ * @param {object} pelanggan - Customer object with nama, noTelefon
+ */
+export function notifyOrderCancelled(tempahan, pelanggan) {
+  if (!isEnabled()) {
+    console.log('[WhatsApp] WhatsApp disabled, skipping message');
+    return;
+  }
+
+  (async () => {
+    try {
+      const message = formatOrderCancelled(tempahan, pelanggan.nama);
+      await sendMessage(pelanggan.noTelefon, message);
+    } catch (err) {
+      console.error(`[WhatsApp] Gagal hantar notifikasi pembatalan untuk tempahan ${tempahan.tempahanId}:`, err.message);
+    }
+  })();
+}
+
+/**
+ * Notify merchant that a customer has cancelled their order.
+ * Fire-and-forget, NO retry.
+ * Gets merchant phone from DB.
+ * @param {object} tempahan - Order object with tempahanId
+ * @param {string} namaPelanggan - Customer name
+ */
+export function notifyMerchantOrderCancelled(tempahan, namaPelanggan) {
+  if (!isEnabled()) {
+    console.log('[WhatsApp] WhatsApp disabled, skipping message');
+    return;
+  }
+
+  (async () => {
+    try {
+      const [rows] = await pool.query('SELECT noTelefonKedai FROM Peniaga LIMIT 1');
+      if (!rows || rows.length === 0 || !rows[0].noTelefonKedai) {
+        console.warn(`[WhatsApp] noTelefonKedai tidak ditemui. Langkau notifikasi pembatalan peniaga.`);
+        return;
+      }
+      const message = formatOrderCancelledMerchant(tempahan, namaPelanggan);
+      await sendMessage(rows[0].noTelefonKedai, message);
+    } catch (err) {
+      console.error(`[WhatsApp] Gagal hantar notifikasi pembatalan kepada peniaga untuk tempahan ${tempahan.tempahanId}:`, err.message);
     }
   })();
 }
