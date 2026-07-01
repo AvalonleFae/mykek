@@ -10,6 +10,8 @@ import {
 } from '../../services/orderService.js';
 import { buildErrorResponse } from '../../utils/errorResponse.js';
 import { ERROR_CODES } from '../../utils/constants.js';
+import { notifyStatusChange } from '../../services/whatsappService.js';
+import pool from '../../config/db.js';
 
 const router = Router();
 
@@ -102,6 +104,25 @@ router.put('/:id/terima', async (req, res) => {
       return res.status(statusCode).json(result);
     }
 
+    // Fire-and-forget WhatsApp notification
+    try {
+      const [orderRows] = await pool.execute(
+        `SELECT t.tempahanId, t.statusTempahan, t.kaedahPenghantaran, t.sebabTolak, p.nama, p.noTelefon
+         FROM Tempahan t JOIN Pelanggan p ON t.pelangganId = p.pelangganId
+         WHERE t.tempahanId = ?`,
+        [tempahanId]
+      );
+      if (orderRows.length > 0) {
+        const row = orderRows[0];
+        notifyStatusChange(
+          { tempahanId: row.tempahanId, statusTempahan: 'Diterima', kaedahPenghantaran: row.kaedahPenghantaran, sebabTolak: row.sebabTolak },
+          { nama: row.nama, noTelefon: row.noTelefon }
+        );
+      }
+    } catch (waErr) {
+      console.error('[WhatsApp] Error sending accept notification:', waErr.message);
+    }
+
     return res.status(200).json(result);
   } catch (error) {
     console.error('Error accepting order:', error);
@@ -133,6 +154,25 @@ router.put('/:id/tolak', async (req, res) => {
       return res.status(statusCode).json(result);
     }
 
+    // Fire-and-forget WhatsApp notification
+    try {
+      const [orderRows] = await pool.execute(
+        `SELECT t.tempahanId, t.statusTempahan, t.kaedahPenghantaran, t.sebabTolak, p.nama, p.noTelefon
+         FROM Tempahan t JOIN Pelanggan p ON t.pelangganId = p.pelangganId
+         WHERE t.tempahanId = ?`,
+        [tempahanId]
+      );
+      if (orderRows.length > 0) {
+        const row = orderRows[0];
+        notifyStatusChange(
+          { tempahanId: row.tempahanId, statusTempahan: 'Ditolak', kaedahPenghantaran: row.kaedahPenghantaran, sebabTolak: sebabTolak },
+          { nama: row.nama, noTelefon: row.noTelefon }
+        );
+      }
+    } catch (waErr) {
+      console.error('[WhatsApp] Error sending reject notification:', waErr.message);
+    }
+
     return res.status(200).json(result);
   } catch (error) {
     console.error('Error rejecting order:', error);
@@ -161,6 +201,27 @@ router.put('/:id/status', async (req, res) => {
     if (result.ralat) {
       const statusCode = result.kod === ERROR_CODES.TIDAK_DITEMUI ? 404 : 400;
       return res.status(statusCode).json(result);
+    }
+
+    // Fire-and-forget WhatsApp notification (only for 'Siap')
+    if (result.statusBaru === 'Siap') {
+      try {
+        const [orderRows] = await pool.execute(
+          `SELECT t.tempahanId, t.statusTempahan, t.kaedahPenghantaran, t.sebabTolak, p.nama, p.noTelefon
+           FROM Tempahan t JOIN Pelanggan p ON t.pelangganId = p.pelangganId
+           WHERE t.tempahanId = ?`,
+          [tempahanId]
+        );
+        if (orderRows.length > 0) {
+          const row = orderRows[0];
+          notifyStatusChange(
+            { tempahanId: row.tempahanId, statusTempahan: 'Siap', kaedahPenghantaran: row.kaedahPenghantaran, sebabTolak: row.sebabTolak },
+            { nama: row.nama, noTelefon: row.noTelefon }
+          );
+        }
+      } catch (waErr) {
+        console.error('[WhatsApp] Error sending status notification:', waErr.message);
+      }
     }
 
     return res.status(200).json(result);

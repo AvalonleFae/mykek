@@ -3,6 +3,8 @@ import { authMiddleware, roleGuard } from '../../middleware/auth.js';
 import { createOrder, getCustomerOrders, getCustomerOrderDetail, cancelOrder } from '../../services/orderService.js';
 import { buildErrorResponse } from '../../utils/errorResponse.js';
 import { ERROR_CODES } from '../../utils/constants.js';
+import { notifyOrderCreated, notifyMerchantNewOrder } from '../../services/whatsappService.js';
+import pool from '../../config/db.js';
 
 const router = Router();
 
@@ -32,6 +34,32 @@ router.post('/', async (req, res) => {
       console.log('Order creation rejected:', JSON.stringify(result));
       console.log('Payload received:', JSON.stringify({ butiran, tarikhAmbil, kaedahPenghantaran }));
       return res.status(400).json(result);
+    }
+
+    // Fire-and-forget WhatsApp notifications (do NOT await)
+    try {
+      const [custRows] = await pool.execute(
+        'SELECT nama, noTelefon FROM Pelanggan WHERE pelangganId = ?',
+        [pelangganId]
+      );
+      if (custRows.length > 0) {
+        const customerInfo = { nama: custRows[0].nama, noTelefon: custRows[0].noTelefon };
+        const orderData = {
+          tempahanId: result.tempahanId,
+          tarikhAmbil,
+          kaedahPenghantaran,
+          jumlahHarga: result.jumlahHarga,
+          statusTempahan: result.statusTempahan,
+        };
+
+        // Notify customer (async, fire-and-forget)
+        notifyOrderCreated(orderData, customerInfo);
+
+        // Notify merchant (async, fire-and-forget)
+        notifyMerchantNewOrder(orderData, customerInfo);
+      }
+    } catch (waErr) {
+      console.error('[WhatsApp] Error preparing notifications:', waErr.message);
     }
 
     return res.status(201).json({

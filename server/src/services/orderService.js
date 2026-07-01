@@ -197,7 +197,8 @@ export async function getMerchantOrders({ page = 1, status, tarikhMula, tarikhAk
   // Get paginated orders
   const [rows] = await pool.execute(
     `SELECT t.tempahanId, t.pelangganId, t.tarikhTempahan, t.tarikhAmbil, t.statusTempahan,
-            t.statusBayaran, t.jumlahHarga, t.kaedahPenghantaran, p.nama AS namaPelanggan, p.noTelefon
+            t.statusBayaran, t.jumlahHarga, t.kaedahPenghantaran, p.nama AS namaPelanggan, p.noTelefon,
+            (SELECT urlImej FROM ImejTempahan WHERE tempahanId = t.tempahanId AND jenisImej = 'Resit' LIMIT 1) AS resitUrl
      FROM Tempahan t
      JOIN Pelanggan p ON t.pelangganId = p.pelangganId
      ${whereClause}

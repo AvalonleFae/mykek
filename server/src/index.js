@@ -19,6 +19,8 @@ import peniagaBusinessInfoRoutes from './routes/peniaga/businessInfo.js';
 import publicRoutes from './routes/public.js';
 import pelangganImageRoutes from './routes/pelanggan/image.js';
 import pelangganChatbotRoutes from './routes/pelanggan/chatbot.js';
+import peniagaWhatsappRoutes from './routes/peniaga/whatsapp.js';
+import { initialize as initializeWhatsApp } from './services/whatsappService.js';
 
 dotenv.config();
 
@@ -80,6 +82,7 @@ app.use('/api/pelanggan/profil', pelangganProfileRoutes);
 app.use('/api/peniaga/profil-perniagaan', peniagaBusinessInfoRoutes);
 app.use('/api/awam', publicRoutes);
 app.use('/api/pelanggan/chatbot', pelangganChatbotRoutes);
+app.use('/api/peniaga/whatsapp', peniagaWhatsappRoutes);
 
 // --- Health check route ---
 app.get('/api/health', (req, res) => {
@@ -97,6 +100,14 @@ app.use((err, req, res, next) => {
 
 // --- Start server ---
 if (process.env.NODE_ENV !== 'test') {
+  // Initialize WhatsApp client (if enabled)
+  if (process.env.WHATSAPP_ENABLED === 'true') {
+    console.log('[WhatsApp] Memulakan klien WhatsApp...');
+    initializeWhatsApp().catch((err) => {
+      console.error('Gagal memulakan WhatsApp:', err);
+    });
+  }
+
   app.listen(PORT, () => {
     console.log(`Pelayan MyKek berjalan di port ${PORT}`);
   });

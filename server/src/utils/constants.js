@@ -36,6 +36,7 @@ export const PAYMENT_METHOD = Object.freeze({
 export const IMAGE_TYPE = Object.freeze({
   AI: 'AI',
   MUAT_NAIK: 'Muat Naik',
+  RESIT: 'Resit',
 });
 
 // Error codes
