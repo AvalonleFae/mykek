@@ -265,8 +265,7 @@ export async function sendMessage(phoneNumber, message) {
     if (numberId) {
       targetId = numberId._serialized;
     } else {
-      console.warn(`[WhatsApp] Nombor ${whatsappId} tidak berdaftar di WhatsApp.`);
-      return { sent: false, queued: false, error: 'Nombor tidak berdaftar di WhatsApp' };
+      console.warn(`[WhatsApp] Warning: getNumberId returned null for ${whatsappId}. Falling back to standard ID.`);
     }
   } catch (err) {
     console.warn(`[WhatsApp] Gagal menyelesaikan ID untuk ${whatsappId}, mencuba format standard:`, err.message);
@@ -305,10 +304,14 @@ export async function isRegisteredUser(phoneNumber) {
 
   try {
     const numberId = await client.getNumberId(result.whatsappId);
-    return !!numberId;
+    if (numberId) {
+      return true;
+    }
+    console.warn(`[WhatsApp] isRegisteredUser: getNumberId returned null for ${result.whatsappId}. Assuming true for registration attempt.`);
+    return true;
   } catch (err) {
     console.error(`[WhatsApp] Gagal semak pengguna berdaftar:`, err.message);
-    return false;
+    return true;
   }
 }
 
