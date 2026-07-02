@@ -26,8 +26,11 @@ api.interceptors.response.use(
 
     // On 401, clear auth state and redirect to landing
     if (error.response?.status === 401) {
-      // Clear any stored auth state
-      window.location.href = '/'
+      const isLoginRequest = config?.url?.includes('/api/auth/')
+      if (window.location.pathname !== '/' && !isLoginRequest) {
+        localStorage.removeItem('mykek_user')
+        window.location.href = '/'
+      }
     }
 
     return Promise.reject(error)
