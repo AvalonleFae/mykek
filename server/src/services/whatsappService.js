@@ -10,6 +10,7 @@
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 import QRCode from 'qrcode';
+import fs from 'fs';
 import { toWhatsAppId } from './phoneNumberUtil.js';
 import {
   formatOrderConfirmation,
@@ -199,6 +200,60 @@ export async function initialize() {
 }
 
 /**
+ * Reset the WhatsApp connection by destroying the client, deleting the session data,
+ * and re-initializing the client to request a new QR code.
+ */
+export async function resetConnection() {
+  console.log('[WhatsApp] Menetapkan semula sambungan WhatsApp...');
+  
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  
+  if (client) {
+    try {
+      await client.destroy();
+      console.log('[WhatsApp] Klien berjaya dimusnahkan.');
+    } catch (err) {
+      console.error('[WhatsApp] Gagal memusnahkan klien:', err.message);
+    }
+    client = null;
+  }
+
+  const sessionPath = process.env.WHATSAPP_SESSION_PATH || '.wwebjs_auth';
+  if (fs.existsSync(sessionPath)) {
+    try {
+      fs.rmSync(sessionPath, { recursive: true, force: true });
+      console.log('[WhatsApp] Folder sesi berjaya dipadam.');
+      
+      // Delay slightly to ensure folder is completely released/deleted
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (err) {
+      console.error('[WhatsApp] Gagal memadam folder sesi:', err.message);
+    }
+  }
+
+  // Also clean cache folder if exists
+  const cachePath = '.wwebjs_cache';
+  if (fs.existsSync(cachePath)) {
+    try {
+      fs.rmSync(cachePath, { recursive: true, force: true });
+      console.log('[WhatsApp] Folder cache berjaya dipadam.');
+    } catch (err) {
+      console.warn('[WhatsApp] Gagal memadam folder cache:', err.message);
+    }
+  }
+
+  connectionState = CONNECTION_STATE.DISCONNECTED;
+  latestQR = null;
+  reconnectAttempts = 0;
+
+  // Re-initialize client (which will generate a new QR code since session files are gone)
+  await initialize();
+}
+
+/**
  * Get current connection status.
  * @returns {{ status: string, isReady: boolean }}
  */
@@ -238,6 +293,8 @@ export async function getQrDataUrl() {
  * @returns {Promise<{ sent: boolean, queued: boolean, error?: string }>}
  */
 export async function sendMessage(phoneNumber, message) {
+  console.log(`[WhatsApp] sendMessage dipanggil dengan phoneNumber: "${phoneNumber}" (type: ${typeof phoneNumber})`);
+
   if (!isEnabled()) {
     console.log('[WhatsApp] WhatsApp disabled, skipping message');
     return { sent: false, queued: false, error: 'WhatsApp disabled' };
@@ -245,6 +302,7 @@ export async function sendMessage(phoneNumber, message) {
 
   const result = toWhatsAppId(phoneNumber);
   if (!result.valid) {
+    console.error(`[WhatsApp] ❌ Nombor tidak sah: "${phoneNumber}" -> ${result.error}`);
     return { sent: false, queued: false, error: result.error };
   }
 
@@ -258,38 +316,132 @@ export async function sendMessage(phoneNumber, message) {
     return { sent: false, queued: true };
   }
 
-  // Resolve the registered JID using getNumberId to ensure it's valid and registered
-  let targetId = whatsappId;
-  try {
-    const numberId = await client.getNumberId(whatsappId);
-    if (numberId) {
-      // Use the resolved ID, but bypass LID JIDs (ending with @lid) because wwebjs
-      // cannot reliably send messages to @lid JIDs. Fall back to the standard @c.us JID instead.
-      if (numberId._serialized && !numberId._serialized.endsWith('@lid')) {
-        targetId = numberId._serialized;
+  // Strategy: Resolve the number's real WID (which may be a LID in multi-device)
+  // via WAWebQueryExistsJob.queryWidExists(), then use the resolved WID to
+  // find/create the chat and send through WAWebSendMsgChatAction.
+  // This is necessary because client.sendMessage() uses @c.us WID directly,
+  // which creates a local chat but fails to deliver messages to recipients
+  // whose internal routing requires a LID in WhatsApp's multi-device architecture.
+  const pupPage = client.pupPage;
+  if (pupPage) {
+    try {
+      console.log(`[WhatsApp] Menghantar mesej ke ${whatsappId} via resolved WID...`);
+
+      const sendResult = await pupPage.evaluate(async (chatId, msgContent) => {
+        try {
+          // Step 1: Create WID from the @c.us phone number
+          const originalWid = window.require('WAWebWidFactory').createWid(chatId);
+
+          // Step 2: Query WhatsApp servers to get the REAL WID for this number
+          // This resolves @c.us to the actual @lid if the number uses multi-device
+          let resolvedWid = originalWid;
+          try {
+            const existsResult = await window
+              .require('WAWebQueryExistsJob')
+              .queryWidExists(originalWid);
+            if (existsResult && existsResult.wid) {
+              resolvedWid = existsResult.wid;
+            }
+          } catch (e) {
+            // If query fails, continue with original WID
+          }
+
+          const resolvedId = resolvedWid._serialized || resolvedWid.toString();
+
+          // Step 3: Find or create the chat using the RESOLVED WID
+          let chat = window.require('WAWebCollections').Chat.get(resolvedWid);
+          if (!chat) {
+            // Also try with original WID
+            chat = window.require('WAWebCollections').Chat.get(originalWid);
+          }
+          if (!chat) {
+            const chatResult = await window
+              .require('WAWebFindChatAction')
+              .findOrCreateLatestChat(resolvedWid);
+            chat = chatResult?.chat;
+          }
+          if (!chat) {
+            const chatResult = await window
+              .require('WAWebFindChatAction')
+              .findOrCreateLatestChat(originalWid);
+            chat = chatResult?.chat;
+          }
+
+          if (!chat) {
+            return { ok: false, error: 'Chat could not be found or created', resolvedId };
+          }
+
+          // Step 4: Build and send the message using internal APIs
+          const { getMaybeMeLidUser, getMaybeMePnUser } = window.require(
+            'WAWebUserPrefsMeUser'
+          );
+          const lidUser = getMaybeMeLidUser();
+          const meUser = getMaybeMePnUser();
+          const from = chat.id.isLid() ? lidUser : meUser;
+          const newId = await window.require('WAWebMsgKey').newId();
+
+          const newMsgKey = new (window.require('WAWebMsgKey'))({
+            from: from,
+            to: chat.id,
+            id: newId,
+            selfDir: 'out',
+          });
+
+          const ephemeralFields = window
+            .require('WAWebGetEphemeralFieldsMsgActionsUtils')
+            .getEphemeralFields(chat);
+
+          const msgPayload = {
+            id: newMsgKey,
+            ack: 0,
+            body: msgContent,
+            from: from,
+            to: chat.id,
+            local: true,
+            self: 'out',
+            t: parseInt(new Date().getTime() / 1000),
+            isNewMsg: true,
+            type: 'chat',
+            ...ephemeralFields,
+          };
+
+          // Step 5: Add and send the message through the internal action
+          const [msgPromise] = window
+            .require('WAWebSendMsgChatAction')
+            .addAndSendMsgToChat(chat, msgPayload);
+          await msgPromise;
+
+          return { ok: true, resolvedId };
+        } catch (e) {
+          return { ok: false, error: e?.message || String(e) };
+        }
+      }, whatsappId, message);
+
+      if (sendResult.ok) {
+        console.log(`[WhatsApp] ✅ Mesej berjaya dihantar ke ${whatsappId} (resolved: ${sendResult.resolvedId})`);
+        return { sent: true, queued: false };
       } else {
-        console.log(`[WhatsApp] JID diselesaikan adalah LID (${numberId._serialized}). Menggunakan format standard (${whatsappId}) sahaja.`);
+        console.error(`[WhatsApp] ❌ Internal send gagal: ${sendResult.error} (resolved: ${sendResult.resolvedId || 'N/A'})`);
       }
-    } else {
-      console.warn(`[WhatsApp] Warning: getNumberId returned null for ${whatsappId}. Falling back to standard ID.`);
+    } catch (err) {
+      console.error(`[WhatsApp] ❌ pupPage.evaluate gagal: ${err.message}`);
     }
-  } catch (err) {
-    console.warn(`[WhatsApp] Gagal menyelesaikan ID untuk ${whatsappId}, mencuba format standard:`, err.message);
   }
 
+  // Fallback: try client.sendMessage (works for self-messages)
   try {
-    await client.sendMessage(targetId, message);
-    console.log(`[WhatsApp] ✅ Mesej berjaya dihantar ke ${targetId}`);
+    await client.sendMessage(whatsappId, message);
+    console.log(`[WhatsApp] ✅ Mesej berjaya dihantar ke ${whatsappId} (via client.sendMessage fallback)`);
     return { sent: true, queued: false };
   } catch (err) {
-    console.error(`[WhatsApp] ❌ Gagal hantar mesej ke ${targetId}:`, err.message);
-    // Queue on send failure
-    const queueResult = enqueue(targetId, message);
-    if (!queueResult.queued) {
-      return { sent: false, queued: false, error: queueResult.error };
-    }
-    return { sent: false, queued: true };
+    console.error(`[WhatsApp] ❌ Semua percubaan gagal untuk ${whatsappId}: ${err.message}`);
   }
+
+  const queueResult = enqueue(whatsappId, message);
+  if (!queueResult.queued) {
+    return { sent: false, queued: false, error: 'All send attempts failed' };
+  }
+  return { sent: false, queued: true };
 }
 
 /**
@@ -355,14 +507,20 @@ export function notifyOrderCreated(tempahan, pelanggan) {
     return;
   }
 
-  console.log(`[WhatsApp] notifyOrderCreated dipanggil untuk tempahan ${tempahan.tempahanId}, pelanggan ${pelanggan.noTelefon}`);
+  console.log(`[WhatsApp] ===== notifyOrderCreated =====`);
+  console.log(`[WhatsApp] tempahan:`, JSON.stringify(tempahan));
+  console.log(`[WhatsApp] pelanggan:`, JSON.stringify(pelanggan));
+  console.log(`[WhatsApp] pelanggan.noTelefon: "${pelanggan.noTelefon}" (type: ${typeof pelanggan.noTelefon})`);
 
   (async () => {
     try {
       const message = formatOrderConfirmation(tempahan, pelanggan.nama);
+      console.log(`[WhatsApp] Mesej pelanggan dibina, panjang: ${message.length}`);
       const result = await sendMessage(pelanggan.noTelefon, message);
+      console.log(`[WhatsApp] notifyOrderCreated sendMessage result:`, JSON.stringify(result));
 
       if (!result.sent && !result.queued) {
+        console.warn(`[WhatsApp] notifyOrderCreated: mesej gagal dihantar, cuba semula dalam 5s...`);
         // Retry once after 5 seconds
         setTimeout(async () => {
           try {

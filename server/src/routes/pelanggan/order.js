@@ -42,7 +42,9 @@ router.post('/', async (req, res) => {
         'SELECT nama, noTelefon FROM Pelanggan WHERE pelangganId = ?',
         [pelangganId]
       );
+      console.log(`[WhatsApp] Order route: pelangganId="${pelangganId}", custRows found: ${custRows.length}`);
       if (custRows.length > 0) {
+        console.log(`[WhatsApp] Order route: customer nama="${custRows[0].nama}", noTelefon="${custRows[0].noTelefon}"`);
         const customerInfo = { nama: custRows[0].nama, noTelefon: custRows[0].noTelefon };
         const orderData = {
           tempahanId: result.tempahanId,
@@ -57,6 +59,8 @@ router.post('/', async (req, res) => {
 
         // Notify merchant (async, fire-and-forget)
         notifyMerchantNewOrder(orderData, customerInfo);
+      } else {
+        console.warn(`[WhatsApp] Order route: NO customer found for pelangganId="${pelangganId}"`);
       }
     } catch (waErr) {
       console.error('[WhatsApp] Error preparing notifications:', waErr.message);

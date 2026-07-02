@@ -6,6 +6,8 @@ export default function WhatsAppSettingsPage() {
   const [status, setStatus] = useState('initializing')
   const [qrCode, setQrCode] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetError, setResetError] = useState(null)
   const prevStatusRef = useRef(null)
 
   // Poll connection status every 5 seconds
@@ -53,6 +55,31 @@ export default function WhatsAppSettingsPage() {
     const interval = setInterval(fetchQR, 60000)
     return () => clearInterval(interval)
   }, [status])
+
+  const handleReset = async () => {
+    if (!window.confirm('Adakah anda pasti mahu menetapkan semula sambungan WhatsApp? Sesi semasa akan dipadamkan dan kod QR baharu akan dijana untuk diimbas.')) {
+      return
+    }
+
+    setResetting(true)
+    setResetError(null)
+    try {
+      const res = await api.post('/api/peniaga/whatsapp/reset')
+      if (res.data.ralat) {
+        setResetError(res.data.mesej)
+      } else {
+        setStatus('initializing')
+        setQrCode(null)
+      }
+    } catch (err) {
+      setResetError(
+        err.response?.data?.mesej || 
+        'Gagal menghubungi pelayan untuk menetapkan semula sambungan.'
+      )
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const getStatusBadge = () => {
     switch (status) {
@@ -110,10 +137,26 @@ export default function WhatsAppSettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">Status:</span>
-            {getStatusBadge()}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600">Status:</span>
+              {getStatusBadge()}
+            </div>
+            
+            <button
+              onClick={handleReset}
+              disabled={resetting}
+              className="inline-flex items-center justify-center px-4 py-2 border border-red-200 rounded-lg text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-colors"
+            >
+              {resetting ? 'Menetapkan semula...' : 'Tetapkan Semula Sambungan'}
+            </button>
           </div>
+
+          {resetError && (
+            <p className="mt-3 text-sm text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg p-2">
+              {resetError}
+            </p>
+          )}
         </div>
 
         {/* QR Code Card - shown when QR scan is required */}

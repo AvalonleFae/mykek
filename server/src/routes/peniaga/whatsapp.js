@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, roleGuard } from '../../middleware/auth.js';
-import { getStatus, getQrDataUrl } from '../../services/whatsappService.js';
+import { getStatus, getQrDataUrl, resetConnection } from '../../services/whatsappService.js';
 
 const router = Router();
 
@@ -53,6 +53,26 @@ router.get('/qr', async (req, res) => {
     ralat: false,
     data: { qr: qrDataUrl },
   });
+});
+
+// POST /api/peniaga/whatsapp/reset
+router.post('/reset', async (req, res) => {
+  try {
+    // Run the reset in the background so we can respond immediately
+    resetConnection().catch(err => {
+      console.error('[WhatsApp Route] Gagal menetapkan semula sambungan:', err.message);
+    });
+
+    return res.json({
+      ralat: false,
+      mesej: 'Proses menetapkan semula sambungan WhatsApp telah dimulakan. Sila tunggu seketika untuk kod QR baharu dijana.',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ralat: true,
+      mesej: 'Gagal menetapkan semula sambungan WhatsApp: ' + err.message,
+    });
+  }
 });
 
 export default router;
