@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LandingPage from './pages/LandingPage'
@@ -17,9 +18,48 @@ import ReportPage from './pages/peniaga/ReportPage'
 import BusinessInfoPage from './pages/peniaga/BusinessInfoPage'
 import WhatsAppSettingsPage from './pages/peniaga/WhatsAppSettingsPage'
 
+function TitleUpdater() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const routeTitles = {
+      '/': 'Utama | MyKek',
+      '/pelanggan': 'Papan Pemuka Pelanggan | MyKek',
+      '/pelanggan/profil': 'Profil Saya | MyKek',
+      '/pelanggan/tempahan/baharu': 'Tempah Kek Baharu | MyKek',
+      '/pelanggan/tempahan': 'Senarai Tempahan | MyKek',
+      '/peniaga': 'Papan Pemuka Peniaga | MyKek',
+      '/peniaga/tempahan': 'Urus Tempahan | MyKek',
+      '/peniaga/spesifikasi': 'Urus Spesifikasi Kek | MyKek',
+      '/peniaga/kalendar': 'Kalendar Cuti | MyKek',
+      '/peniaga/laporan': 'Laporan dan Analisis | MyKek',
+      '/peniaga/perniagaan': 'Kemas Kini Perniagaan | MyKek',
+      '/peniaga/whatsapp': 'Sambung ke WhatsApp | MyKek',
+    }
+
+    const path = location.pathname
+    let title = 'MyKek'
+
+    if (routeTitles[path]) {
+      title = routeTitles[path]
+    } else if (path.startsWith('/pelanggan/tempahan/')) {
+      title = 'Butiran Tempahan | MyKek'
+    } else if (path.startsWith('/pelanggan/bayaran/')) {
+      title = 'Pembayaran QR | MyKek'
+    } else if (path.startsWith('/peniaga/tempahan/')) {
+      title = 'Butiran Tempahan Peniaga | MyKek'
+    }
+
+    document.title = title
+  }, [location])
+
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <TitleUpdater />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
