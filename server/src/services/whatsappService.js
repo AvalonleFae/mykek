@@ -258,13 +258,28 @@ export async function sendMessage(phoneNumber, message) {
     return { sent: false, queued: true };
   }
 
+  // Resolve the registered JID using getNumberId to ensure it's valid and registered
+  let targetId = whatsappId;
   try {
-    await client.sendMessage(whatsappId, message);
+    const numberId = await client.getNumberId(whatsappId);
+    if (numberId) {
+      targetId = numberId._serialized;
+    } else {
+      console.warn(`[WhatsApp] Nombor ${whatsappId} tidak berdaftar di WhatsApp.`);
+      return { sent: false, queued: false, error: 'Nombor tidak berdaftar di WhatsApp' };
+    }
+  } catch (err) {
+    console.warn(`[WhatsApp] Gagal menyelesaikan ID untuk ${whatsappId}, mencuba format standard:`, err.message);
+  }
+
+  try {
+    await client.sendMessage(targetId, message);
+    console.log(`[WhatsApp] ✅ Mesej berjaya dihantar ke ${targetId}`);
     return { sent: true, queued: false };
   } catch (err) {
-    console.error(`[WhatsApp] Gagal hantar mesej ke ${whatsappId}:`, err.message);
+    console.error(`[WhatsApp] ❌ Gagal hantar mesej ke ${targetId}:`, err.message);
     // Queue on send failure
-    const queueResult = enqueue(whatsappId, message);
+    const queueResult = enqueue(targetId, message);
     if (!queueResult.queued) {
       return { sent: false, queued: false, error: queueResult.error };
     }
@@ -289,8 +304,8 @@ export async function isRegisteredUser(phoneNumber) {
   }
 
   try {
-    const isRegistered = await client.isRegisteredUser(result.whatsappId);
-    return isRegistered;
+    const numberId = await client.getNumberId(result.whatsappId);
+    return !!numberId;
   } catch (err) {
     console.error(`[WhatsApp] Gagal semak pengguna berdaftar:`, err.message);
     return false;
@@ -330,6 +345,8 @@ export function notifyOrderCreated(tempahan, pelanggan) {
     console.log('[WhatsApp] WhatsApp disabled, skipping message');
     return;
   }
+
+  console.log(`[WhatsApp] notifyOrderCreated dipanggil untuk tempahan ${tempahan.tempahanId}, pelanggan ${pelanggan.noTelefon}`);
 
   (async () => {
     try {
@@ -373,6 +390,8 @@ export function notifyMerchantNewOrder(tempahan, pelanggan) {
     console.log('[WhatsApp] WhatsApp disabled, skipping message');
     return;
   }
+
+  console.log(`[WhatsApp] notifyMerchantNewOrder dipanggil untuk tempahan ${tempahan.tempahanId}`);
 
   (async () => {
     try {
