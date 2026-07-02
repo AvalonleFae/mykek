@@ -263,7 +263,13 @@ export async function sendMessage(phoneNumber, message) {
   try {
     const numberId = await client.getNumberId(whatsappId);
     if (numberId) {
-      targetId = numberId._serialized;
+      // Use the resolved ID, but bypass LID JIDs (ending with @lid) because wwebjs
+      // cannot reliably send messages to @lid JIDs. Fall back to the standard @c.us JID instead.
+      if (numberId._serialized && !numberId._serialized.endsWith('@lid')) {
+        targetId = numberId._serialized;
+      } else {
+        console.log(`[WhatsApp] JID diselesaikan adalah LID (${numberId._serialized}). Menggunakan format standard (${whatsappId}) sahaja.`);
+      }
     } else {
       console.warn(`[WhatsApp] Warning: getNumberId returned null for ${whatsappId}. Falling back to standard ID.`);
     }
