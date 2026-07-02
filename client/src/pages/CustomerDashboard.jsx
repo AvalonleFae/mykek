@@ -51,22 +51,22 @@ export default function CustomerDashboard() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
 
-      <main className="flex-1 p-6 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
+      <main className="flex-1 p-4 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
         {/* Greeting */}
-        <h1 className="text-2xl font-bold text-gray-800 mb-8">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-6 md:mb-8">
           Selamat datang, {user?.nama || 'Pelanggan'}!
         </h1>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {cards.map((card) => (
             <div
               key={card.title}
-              className="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center text-center"
+              className="bg-white rounded-2xl shadow-md p-5 md:p-6 flex flex-col items-center text-center"
             >
-              <div className="mb-4">{card.icon}</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">{card.title}</h3>
-              <p className="text-sm text-gray-500 mb-6">{card.description}</p>
+              <div className="mb-3 md:mb-4">{card.icon}</div>
+              <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">{card.title}</h3>
+              <p className="text-sm text-gray-500 mb-5 md:mb-6">{card.description}</p>
               <button
                 onClick={() => navigate(card.path)}
                 className="mt-auto px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm"
@@ -78,7 +78,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Logout Button */}
-        <div className="flex justify-end mt-10">
+        <div className="flex justify-end mt-8 md:mt-10">
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-full transition-colors text-sm"

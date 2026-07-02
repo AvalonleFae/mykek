@@ -135,12 +135,12 @@ export default function OrderManagementPage() {
       <ErrorMessage message={error} />
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+            className={`px-4 md:px-6 py-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
               activeTab === tab.key
                 ? 'text-orange-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -154,7 +154,7 @@ export default function OrderManagementPage() {
         ))}
       </div>
 
-      {/* Table */}
+      {/* Table (desktop) / Cards (mobile) */}
       {loading ? (
         <LoadingSpinner />
       ) : orders.length === 0 ? (
@@ -162,103 +162,166 @@ export default function OrderManagementPage() {
           Tiada tempahan ditemui.
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">ID / Nama Pelanggan</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Jumlah Bayaran</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Tarikh Diperlukan</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Kaedah</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Status Tempahan</th>
-                {activeTab === 'selesai' && (
-                  <th className="text-left px-6 py-3 font-medium text-gray-600">Status Bayaran</th>
-                )}
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Tindakan</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {orders.map((order) => (
-                <tr key={order.tempahanId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-800">{order.namaPelanggan || '-'}</p>
-                    <p className="text-xs text-gray-500">#{order.tempahanId}</p>
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    <div>
-                      {getButiranSummary(order)}
-                      {order.resitUrl && (
-                        <a
-                          href={getImageUrl(order.resitUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block mt-1 text-xs text-orange-600 hover:text-orange-700 font-medium"
-                        >
-                          📄 Lihat Resit
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    {order.tarikhAmbil ? new Date(order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}
-                  </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    {order.kaedahPenghantaran || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.statusTempahan)}`}>
-                      {order.statusTempahan}
-                    </span>
-                  </td>
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">ID / Nama Pelanggan</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">Jumlah Bayaran</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">Tarikh Diperlukan</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">Kaedah</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">Status Tempahan</th>
                   {activeTab === 'selesai' && (
+                    <th className="text-left px-6 py-3 font-medium text-gray-600">Status Bayaran</th>
+                  )}
+                  <th className="text-left px-6 py-3 font-medium text-gray-600">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {orders.map((order) => (
+                  <tr key={order.tempahanId} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      <p className="font-medium text-gray-800">{order.namaPelanggan || '-'}</p>
+                      <p className="text-xs text-gray-500">#{order.tempahanId}</p>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      <div>
+                        {getButiranSummary(order)}
+                        {order.resitUrl && (
+                          <a
+                            href={getImageUrl(order.resitUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block mt-1 text-xs text-orange-600 hover:text-orange-700 font-medium"
+                          >
+                            📄 Lihat Resit
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      {order.tarikhAmbil ? new Date(order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      {order.kaedahPenghantaran || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.statusTempahan)}`}>
+                        {order.statusTempahan}
+                      </span>
+                    </td>
+                    {activeTab === 'selesai' && (
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          order.statusBayaran === 'Telah Dibayar' ? 'bg-green-100 text-green-700' :
+                          order.statusBayaran === 'Deposit Dibayar' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {order.statusBayaran || 'Belum Dibayar'}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-6 py-4">
+                      {activeTab === 'baharu' && (
+                        <button
+                          onClick={() => openDetailModal(order.tempahanId)}
+                          className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+                        >
+                          Lihat
+                        </button>
+                      )}
+                      {activeTab === 'aktif' && (
+                        <button
+                          onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
+                          className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+                        >
+                          Kemas Kini
+                        </button>
+                      )}
+                      {activeTab === 'selesai' && (
+                        <button
+                          onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
+                          className="px-4 py-1.5 text-xs font-medium bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                        >
+                          Perincian
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {orders.map((order) => (
+              <div key={order.tempahanId} className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">{order.namaPelanggan || '-'}</p>
+                    <p className="text-xs text-gray-500">#{order.tempahanId}</p>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.statusTempahan)}`}>
+                    {order.statusTempahan}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 mb-3">
+                  <span><span className="font-medium">Bayaran:</span> {getButiranSummary(order)}</span>
+                  <span><span className="font-medium">Kaedah:</span> {order.kaedahPenghantaran || '-'}</span>
+                  <span className="col-span-2"><span className="font-medium">Tarikh:</span> {order.tarikhAmbil ? new Date(order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}</span>
+                  {activeTab === 'selesai' && (
+                    <span className="col-span-2">
+                      <span className="font-medium">Bayaran:</span>{' '}
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         order.statusBayaran === 'Telah Dibayar' ? 'bg-green-100 text-green-700' :
                         order.statusBayaran === 'Deposit Dibayar' ? 'bg-yellow-100 text-yellow-700' :
                         'bg-red-100 text-red-700'
                       }`}>
                         {order.statusBayaran || 'Belum Dibayar'}
                       </span>
-                    </td>
+                    </span>
                   )}
-                  <td className="px-6 py-4">
-                    {activeTab === 'baharu' && (
-                      <button
-                        onClick={() => openDetailModal(order.tempahanId)}
-                        className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-                      >
-                        Lihat
-                      </button>
-                    )}
-                    {activeTab === 'aktif' && (
-                      <button
-                        onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
-                        className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
-                      >
-                        Kemas Kini
-                      </button>
-                    )}
-                    {activeTab === 'selesai' && (
-                      <button
-                        onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
-                        className="px-4 py-1.5 text-xs font-medium bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
-                      >
-                        Perincian
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </div>
+                <div className="flex justify-end">
+                  {activeTab === 'baharu' && (
+                    <button
+                      onClick={() => openDetailModal(order.tempahanId)}
+                      className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+                    >
+                      Lihat
+                    </button>
+                  )}
+                  {activeTab === 'aktif' && (
+                    <button
+                      onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
+                      className="px-4 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors"
+                    >
+                      Kemas Kini
+                    </button>
+                  )}
+                  {activeTab === 'selesai' && (
+                    <button
+                      onClick={() => navigate(`/peniaga/tempahan/${order.tempahanId}`)}
+                      className="px-4 py-1.5 text-xs font-medium bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                    >
+                      Perincian
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Detail Modal */}
       {detailModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={closeDetailModal}></div>
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-3xl sm:mx-4 max-h-[92vh] overflow-y-auto">
             {detailLoading ? (
               <div className="p-8">
                 <LoadingSpinner />
@@ -266,13 +329,13 @@ export default function OrderManagementPage() {
             ) : detailModal.order ? (
               <>
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-800">
+                <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-base font-bold text-gray-800 pr-4">
                     {detailModal.order.namaPelanggan || 'Pelanggan'} - {detailModal.order.noTelefon || 'Tiada No. Telefon'}
                   </h3>
                   <button
                     onClick={closeDetailModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -281,7 +344,7 @@ export default function OrderManagementPage() {
                 </div>
 
                 {/* Modal Body */}
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Left side */}
                     <div className="space-y-4">

@@ -165,9 +165,9 @@ export default function OrderDetailPeniaga() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Orange Header Banner */}
-      <div className="bg-orange-500 px-8 py-6">
+      <div className="bg-orange-500 px-4 md:px-8 py-5 md:py-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-xl font-bold text-white">
+          <h1 className="text-lg md:text-xl font-bold text-white">
             Tempahan #{order.tempahanId}
           </h1>
           <p className="text-orange-100 text-sm mt-1">
@@ -176,7 +176,7 @@ export default function OrderDetailPeniaga() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
         {/* Back button */}
         <button
           onClick={() => navigate('/peniaga/tempahan')}
@@ -198,8 +198,8 @@ export default function OrderDetailPeniaga() {
             <h2 className="text-base font-bold text-gray-800 mb-4">Kemas Kini Status Tempahan</h2>
 
             {/* Progress bar */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
+            <div className="mb-6 overflow-x-auto">
+              <div className="flex items-center justify-between min-w-[260px]">
                 {STATUS_LABELS.map((label, idx) => {
                   const isCompleted = idx <= currentStepIndex
                   const isCurrent = idx === currentStepIndex

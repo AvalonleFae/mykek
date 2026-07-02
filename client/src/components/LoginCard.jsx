@@ -201,7 +201,7 @@ export default function LoginCard() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
+    <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm">
       {/* Title */}
       <h2 className="text-2xl font-bold text-gray-800 mb-1">Selamat Datang!</h2>
       <p className="text-lg text-gray-600 mb-5">Log Masuk</p>

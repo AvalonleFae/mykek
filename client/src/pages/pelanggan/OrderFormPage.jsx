@@ -333,7 +333,7 @@ export default function OrderFormPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <h2 className="text-orange-500 font-semibold text-sm mb-4">3. Maklumat Penghantaran</h2>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Tarikh Ambil/Hantar</label>
                     <input
@@ -408,7 +408,7 @@ export default function OrderFormPage() {
                 </div>
 
                 {/* Total & Submit */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-gray-100">
                   <div>
                     <p className="text-xs text-gray-500">Jumlah Harga:</p>
                     <p className="text-xl font-bold text-orange-500">RM {total.toFixed(2)}</p>
@@ -416,7 +416,7 @@ export default function OrderFormPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-8 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full text-sm transition-colors"
+                    className="w-full sm:w-auto px-8 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold rounded-full text-sm transition-colors"
                   >
                     {submitting ? 'Menghantar...' : 'Hantar Tempahan'}
                   </button>

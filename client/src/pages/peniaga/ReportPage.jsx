@@ -101,7 +101,7 @@ export default function ReportPage() {
       <ErrorMessage message={error} />
 
       {/* Top bar - Month/Year selector + PDF button */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-6">
         <span className="text-sm text-gray-600">Tempoh:</span>
         <select
           value={bulan}
@@ -127,7 +127,7 @@ export default function ReportPage() {
         >
           Tapis
         </button>
-        <div className="flex-1"></div>
+        <div className="flex-1 hidden md:block"></div>
         <button
           onClick={handleDownloadPDF}
           disabled={downloading || !hasData}

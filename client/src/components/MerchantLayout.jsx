@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -15,16 +16,33 @@ export default function MerchantLayout({ children, title, subtitle }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleLogout = async () => {
     await logout()
     navigate('/')
   }
 
+  const handleNavClick = (path) => {
+    navigate(path)
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="min-h-screen flex">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r flex flex-col shrink-0">
+      <aside
+        className={`fixed md:static z-30 inset-y-0 left-0 w-64 bg-white border-r flex flex-col shrink-0 transition-transform duration-200
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
         {/* Logo */}
         <div className="px-6 py-5 flex items-center gap-2 border-b">
           <svg
@@ -39,11 +57,11 @@ export default function MerchantLayout({ children, title, subtitle }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.label}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavClick(item.path)}
               className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 location.pathname === item.path
                   ? 'bg-orange-500 text-white'
@@ -70,17 +88,29 @@ export default function MerchantLayout({ children, title, subtitle }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Orange Header Banner */}
-        <div className="bg-orange-500 px-8 py-8">
-          <h1 className="text-2xl font-bold text-white">
-            {title || `Selamat Datang, ${user?.nama || 'Peniaga'}!`}
-          </h1>
-          {subtitle && <p className="text-orange-100 mt-1">{subtitle}</p>}
+        <div className="bg-orange-500 px-4 md:px-8 py-5 md:py-8 flex items-start gap-3">
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden mt-0.5 shrink-0 text-white"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Buka menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white">
+              {title || `Selamat Datang, ${user?.nama || 'Peniaga'}!`}
+            </h1>
+            {subtitle && <p className="text-orange-100 mt-1 text-sm">{subtitle}</p>}
+          </div>
         </div>
 
         {/* Content Area */}
-        <main className="flex-1 p-8" style={{ backgroundColor: '#FFF5EE' }}>
+        <main className="flex-1 p-4 md:p-8" style={{ backgroundColor: '#FFF5EE' }}>
           {children}
         </main>
       </div>

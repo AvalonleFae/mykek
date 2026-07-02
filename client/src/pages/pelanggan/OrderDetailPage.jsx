@@ -76,7 +76,7 @@ export default function OrderDetailPage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
 
-      <main className="flex-1 p-6 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
+      <main className="flex-1 p-4 md:p-10" style={{ backgroundColor: '#FFF5EE' }}>
         <div className="max-w-2xl mx-auto">
           {/* Back button */}
           <button
