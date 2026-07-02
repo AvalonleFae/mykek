@@ -260,14 +260,23 @@ export async function sendMessage(phoneNumber, message) {
 
   try {
     await client.sendMessage(whatsappId, message);
+    console.log(`[WhatsApp] ✅ Mesej berjaya dihantar ke ${whatsappId}`);
     return { sent: true, queued: false };
   } catch (err) {
-    console.error(`[WhatsApp] Gagal hantar mesej ke ${whatsappId}:`, err.message);
+    console.error(`[WhatsApp] ❌ Gagal hantar mesej ke ${whatsappId}:`, err.message);
     // Queue on send failure
     const queueResult = enqueue(whatsappId, message);
     if (!queueResult.queued) {
       return { sent: false, queued: false, error: queueResult.error };
     }
+    console.warn(`[WhatsApp] Mesej dimasukkan ke giliran untuk ${whatsappId} (${messageQueue.length} dalam giliran)`);
+    // Schedule a queue flush attempt in 10 seconds (client is connected, transient failure)
+    setTimeout(() => {
+      if (connectionState === CONNECTION_STATE.CONNECTED && messageQueue.length > 0) {
+        console.log(`[WhatsApp] Cuba semula giliran mesej (${messageQueue.length} mesej)...`);
+        flushQueue().catch((e) => console.error('[WhatsApp] Gagal flush giliran:', e.message));
+      }
+    }, 10000);
     return { sent: false, queued: true };
   }
 }
@@ -331,6 +340,8 @@ export function notifyOrderCreated(tempahan, pelanggan) {
     return;
   }
 
+  console.log(`[WhatsApp] notifyOrderCreated dipanggil untuk tempahan ${tempahan.tempahanId}, pelanggan ${pelanggan.noTelefon}`);
+
   (async () => {
     try {
       const message = formatOrderConfirmation(tempahan, pelanggan.nama);
@@ -373,6 +384,8 @@ export function notifyMerchantNewOrder(tempahan, pelanggan) {
     console.log('[WhatsApp] WhatsApp disabled, skipping message');
     return;
   }
+
+  console.log(`[WhatsApp] notifyMerchantNewOrder dipanggil untuk tempahan ${tempahan.tempahanId}`);
 
   (async () => {
     try {
