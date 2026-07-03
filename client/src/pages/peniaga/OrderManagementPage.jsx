@@ -361,6 +361,12 @@ export default function OrderManagementPage() {
                                 >
                                   Lihat imej penuh
                                 </a>
+                                {rujukanImage.jenisImej === 'AI' && rujukanImage.promptAI && (
+                                  <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-150">
+                                    <p className="text-xs font-semibold text-gray-700 mb-1">Deskripsi Prompt AI:</p>
+                                    <p className="text-xs text-gray-600 italic">"{rujukanImage.promptAI}"</p>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <p className="text-sm text-gray-500">Tiada imej rujukan</p>
