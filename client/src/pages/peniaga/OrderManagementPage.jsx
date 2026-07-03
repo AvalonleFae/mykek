@@ -264,133 +264,170 @@ export default function OrderManagementPage() {
                 <LoadingSpinner />
               </div>
             ) : detailModal.order ? (
-              <>
-                {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {detailModal.order.namaPelanggan || 'Pelanggan'} - {detailModal.order.noTelefon || 'Tiada No. Telefon'}
-                  </h3>
-                  <button
-                    onClick={closeDetailModal}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+              (() => {
+                const order = detailModal.order;
+                const rujukanImage = order.imej?.find(
+                  (img) => img.jenisImej === 'AI' || img.jenisImej === 'Muat Naik'
+                );
+                const resitImage = order.imej?.find(
+                  (img) => img.jenisImej === 'Resit'
+                );
 
-                {/* Modal Body */}
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left side */}
-                    <div className="space-y-4">
-                      {/* Spesifikasi Kek */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Spesifikasi Kek</h4>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          {detailModal.order.butiran && detailModal.order.butiran.length > 0 ? (
-                            detailModal.order.butiran.map((item, idx) => (
-                              <p key={idx}>
-                                <span className="font-medium">{item.namaKategori}:</span> {item.namaPilihan}
-                              </p>
-                            ))
-                          ) : (
-                            <p>Tiada spesifikasi</p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Maklumat Penghantaran */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Maklumat Penghantaran</h4>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <p>
-                            <span className="font-medium">Tarikh Ambil:</span>{' '}
-                            {detailModal.order.tarikhAmbil ? new Date(detailModal.order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}
-                          </p>
-                          <p>
-                            <span className="font-medium">Kaedah:</span>{' '}
-                            {detailModal.order.kaedahPenghantaran || '-'}
-                          </p>
-                          {detailModal.order.alamatPenghantaran && (
-                            <p>
-                              <span className="font-medium">Alamat:</span>{' '}
-                              {detailModal.order.alamatPenghantaran}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Catatan Tambahan */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Catatan Tambahan</h4>
-                        <p className="text-sm text-gray-600">
-                          {detailModal.order.nota || 'Tiada catatan'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Right side - Image */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-800 mb-2">Imej Rujukan</h4>
-                      {detailModal.order.imej && detailModal.order.imej.length > 0 ? (
-                        <div>
-                          <img
-                            src={getImageUrl(detailModal.order.imej[0].urlImej)}
-                            alt="Rujukan Kek"
-                            className="w-full h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
-                          />
-                          <a
-                            href={getImageUrl(detailModal.order.imej[0].urlImej)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-orange-600 hover:text-orange-700 mt-2 inline-block"
-                          >
-                            Lihat imej penuh
-                          </a>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">Tiada imej rujukan</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tindakan */}
-                  <div className="mt-6 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-3">Tindakan</h4>
-                    <div className="space-y-3">
-                      <select
-                        value={tindakan}
-                        onChange={(e) => setTindakan(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
-                      >
-                        <option value="">-- Pilih Tindakan --</option>
-                        <option value="Terima">Terima</option>
-                        <option value="Tidak Terima">Tidak Terima</option>
-                      </select>
-
-                      {tindakan === 'Tidak Terima' && (
-                        <textarea
-                          value={sebabTolak}
-                          onChange={(e) => setSebabTolak(e.target.value)}
-                          placeholder="Masukkan sebab penolakan..."
-                          className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none h-24"
-                          maxLength={500}
-                        />
-                      )}
-
+                return (
+                  <>
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-800">
+                        {order.namaPelanggan || 'Pelanggan'} - {order.noTelefon || 'Tiada No. Telefon'}
+                      </h3>
                       <button
-                        onClick={handleSaveAction}
-                        disabled={actionLoading || !tindakan}
-                        className="px-6 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={closeDetailModal}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
                       >
-                        {actionLoading ? 'Memproses...' : 'Simpan dan Kemas Kini'}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
                     </div>
-                  </div>
-                </div>
-              </>
+
+                    {/* Modal Body */}
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left side */}
+                        <div className="space-y-4">
+                          {/* Spesifikasi Kek */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Spesifikasi Kek</h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              {order.butiran && order.butiran.length > 0 ? (
+                                order.butiran.map((item, idx) => (
+                                  <p key={idx}>
+                                    <span className="font-medium">{item.namaKategori}:</span> {item.namaPilihan}
+                                  </p>
+                                ))
+                              ) : (
+                                <p>Tiada spesifikasi</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Maklumat Penghantaran */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Maklumat Penghantaran</h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p>
+                                <span className="font-medium">Tarikh Ambil:</span>{' '}
+                                {order.tarikhAmbil ? new Date(order.tarikhAmbil).toLocaleDateString('ms-MY') : '-'}
+                              </p>
+                              <p>
+                                <span className="font-medium">Kaedah:</span>{' '}
+                                {order.kaedahPenghantaran || '-'}
+                              </p>
+                              {order.alamatPenghantaran && (
+                                <p>
+                                  <span className="font-medium">Alamat:</span>{' '}
+                                  {order.alamatPenghantaran}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Catatan Tambahan */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Catatan Tambahan</h4>
+                            <p className="text-sm text-gray-600">
+                              {order.nota || 'Tiada catatan'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right side - Image & Receipt */}
+                        <div className="space-y-6">
+                          {/* Imej Rujukan */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Imej Rujukan</h4>
+                            {rujukanImage ? (
+                              <div>
+                                <img
+                                  src={getImageUrl(rujukanImage.urlImej)}
+                                  alt="Rujukan Kek"
+                                  className="w-full h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                                />
+                                <a
+                                  href={getImageUrl(rujukanImage.urlImej)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-orange-600 hover:text-orange-700 mt-2 inline-block font-medium"
+                                >
+                                  Lihat imej penuh
+                                </a>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">Tiada imej rujukan</p>
+                            )}
+                          </div>
+
+                          {/* Resit Pembayaran */}
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-800 mb-2">Resit Pembayaran</h4>
+                            {resitImage ? (
+                              <div>
+                                <a
+                                  href={getImageUrl(resitImage.urlImej)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-4 py-2 border border-orange-200 rounded-lg text-sm text-orange-600 hover:bg-orange-50 font-medium transition-colors"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                  </svg>
+                                  Lihat Resit Pembayaran
+                                </a>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">Tiada resit dimuat naik</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tindakan */}
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-3">Tindakan</h4>
+                        <div className="space-y-3">
+                          <select
+                            value={tindakan}
+                            onChange={(e) => setTindakan(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                          >
+                            <option value="">-- Pilih Tindakan --</option>
+                            <option value="Terima">Terima</option>
+                            <option value="Tidak Terima">Tidak Terima</option>
+                          </select>
+
+                          {tindakan === 'Tidak Terima' && (
+                            <textarea
+                              value={sebabTolak}
+                              onChange={(e) => setSebabTolak(e.target.value)}
+                              placeholder="Masukkan sebab penolakan..."
+                              className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 resize-none h-24"
+                              maxLength={500}
+                            />
+                          )}
+
+                          <button
+                            onClick={handleSaveAction}
+                            disabled={actionLoading || !tindakan}
+                            className="px-6 py-2 text-sm font-medium bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {actionLoading ? 'Memproses...' : 'Simpan dan Kemas Kini'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()
             ) : null}
           </div>
         </div>
