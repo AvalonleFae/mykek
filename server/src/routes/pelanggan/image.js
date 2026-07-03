@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import fs from 'fs';
 import { authMiddleware, roleGuard } from '../../middleware/auth.js';
 import { generateAIImage, uploadImage } from '../../services/imageService.js';
 import { buildErrorResponse } from '../../utils/errorResponse.js';
@@ -14,6 +15,45 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = Router();
+
+/**
+ * Helper to download an external image and save it to the local uploads directory.
+ * @param {string} url - The external image URL.
+ * @param {string} destDir - The destination directory.
+ * @returns {Promise<string>} The relative path to the saved image.
+ */
+async function downloadAndSaveImage(url, destDir) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Gagal memuat turun imej: ${response.status} ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get('content-type');
+  let extension = '.webp'; // Default extension
+  if (contentType) {
+    if (contentType.includes('image/png')) {
+      extension = '.png';
+    } else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) {
+      extension = '.jpg';
+    } else if (contentType.includes('image/webp')) {
+      extension = '.webp';
+    }
+  }
+
+  const uniqueSuffix = crypto.randomBytes(16).toString('hex');
+  const filename = `ai-${Date.now()}-${uniqueSuffix}${extension}`;
+  const destPath = path.join(destDir, filename);
+
+  // Ensure upload directory exists
+  await fs.promises.mkdir(destDir, { recursive: true });
+
+  // Download and write
+  const arrayBuffer = await response.arrayBuffer();
+  await fs.promises.writeFile(destPath, Buffer.from(arrayBuffer));
+
+  return `/uploads/images/${filename}`;
+}
+
 
 // All image routes require authentication + pelanggan role
 router.use(authMiddleware, roleGuard('pelanggan'));
@@ -165,6 +205,19 @@ router.post('/simpan-imej-ai', async (req, res) => {
       );
     }
 
+    // Download image locally if it's an external URL
+    let finalUrlImej = urlImej;
+    if (urlImej.startsWith('http://') || urlImej.startsWith('https://')) {
+      try {
+        finalUrlImej = await downloadAndSaveImage(urlImej, uploadDir);
+      } catch (downloadErr) {
+        console.error('Error downloading AI image:', downloadErr);
+        return res.status(500).json(
+          buildErrorResponse('Gagal memuat turun dan menyimpan imej AI. Sila cuba lagi.')
+        );
+      }
+    }
+
     // Check if AI image already exists for this order — replace it
     const [existing] = await pool.execute(
       "SELECT imejId FROM ImejTempahan WHERE tempahanId = ? AND jenisImej = 'AI'",
@@ -174,13 +227,13 @@ router.post('/simpan-imej-ai', async (req, res) => {
     if (existing.length > 0) {
       await pool.execute(
         'UPDATE ImejTempahan SET urlImej = ?, promptAI = ?, tarikhMuatNaik = NOW() WHERE imejId = ?',
-        [urlImej, promptAI || null, existing[0].imejId]
+        [finalUrlImej, promptAI || null, existing[0].imejId]
       );
     } else {
       const imejId = await generateImejId();
       await pool.execute(
         "INSERT INTO ImejTempahan (imejId, tempahanId, jenisImej, urlImej, promptAI, tarikhMuatNaik) VALUES (?, ?, 'AI', ?, ?, NOW())",
-        [imejId, orderId, urlImej, promptAI || null]
+        [imejId, orderId, finalUrlImej, promptAI || null]
       );
     }
 
