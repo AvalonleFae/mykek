@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import Header from '../../components/Header'
 import api from '../../services/api'
@@ -11,11 +11,28 @@ export default function QRPaymentPage() {
   const [proofPreview, setProofPreview] = useState('')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [price, setPrice] = useState(null)
 
   // Get order data passed from the form (for new orders)
   const orderState = location.state || {}
   const { orderPayload, uploadedFile, aiImageUrl, aiPrompt } = orderState
   const isNewOrder = id === 'baharu' && orderPayload
+
+  useEffect(() => {
+    if (isNewOrder) {
+      setPrice(location.state?.totalPrice ?? null)
+    } else {
+      const fetchPrice = async () => {
+        try {
+          const res = await api.get(`/api/pelanggan/tempahan/${id}`)
+          setPrice(res.data.data?.jumlahHarga ?? null)
+        } catch (err) {
+          console.error('Gagal mengambil harga tempahan:', err)
+        }
+      }
+      fetchPrice()
+    }
+  }, [id, isNewOrder, location.state])
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -120,10 +137,15 @@ export default function QRPaymentPage() {
             </div>
 
             {/* Order Info */}
-            <div className="p-3 bg-orange-50 rounded-xl border border-orange-200 mb-6">
-              <p className="text-sm text-gray-600">
-                {isNewOrder ? 'Tempahan Baharu' : `Tempahan #${id}`}
+            <div className="p-4 bg-orange-50 rounded-xl border border-orange-200 mb-6 text-center">
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
+                {isNewOrder ? 'Total' : `Tempahan #${id}`}
               </p>
+              {price !== null && (
+                <p className="text-2xl font-bold text-orange-600 mt-1">
+                  RM {Number(price).toFixed(2)}
+                </p>
+              )}
             </div>
 
             {/* Upload Proof of Payment */}

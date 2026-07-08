@@ -96,9 +96,13 @@ export default function OrderListPage() {
   }
 
   const canCancel = (order) => {
-    if (order.statusTempahan === 'Menunggu Pengesahan') return true
-    if (order.statusTempahan === 'Diterima' && order.tarikhTerima) {
-      const diff = Date.now() - new Date(order.tarikhTerima).getTime()
+    if (!order) return false
+    const status = order.statusTempahan || order.status || ''
+    if (['Menunggu Pengesahan', 'Menunggu Bayaran'].includes(status)) return true
+
+    const tarikhTerima = order.tarikhTerima || order.acceptedAt
+    if (['Diterima', 'Dalam Proses'].includes(status) && tarikhTerima) {
+      const diff = Date.now() - new Date(tarikhTerima).getTime()
       return diff <= 24 * 60 * 60 * 1000
     }
     return false

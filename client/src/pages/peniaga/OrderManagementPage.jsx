@@ -38,6 +38,14 @@ export default function OrderManagementPage() {
   const [success, setSuccess] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
 
+  // Sorting state
+  const [sortKey, setSortKey] = useState('')
+  const [sortDirection, setSortDirection] = useState('')
+
+  // Filter state
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const [selectedYear, setSelectedYear] = useState('')
+
   // Detail modal state
   const [detailModal, setDetailModal] = useState({ open: false, order: null })
   const [detailLoading, setDetailLoading] = useState(false)
@@ -64,6 +72,10 @@ export default function OrderManagementPage() {
   }
 
   useEffect(() => {
+    setSortKey('')
+    setSortDirection('')
+    setSelectedMonth('')
+    setSelectedYear('')
     fetchOrders()
   }, [activeTab])
 
@@ -129,6 +141,106 @@ export default function OrderManagementPage() {
     return `RM ${Number(order.jumlahHarga || 0).toFixed(2)}`
   }
 
+  // Handle header sorting click
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDirection('asc')
+    }
+  }
+
+  // Get filtered and sorted orders dynamically for rendering
+  const getFilteredAndSortedOrders = () => {
+    let list = [...orders]
+
+    // Apply month/year filtering only on "selesai" tab
+    if (activeTab === 'selesai') {
+      if (selectedMonth) {
+        list = list.filter((o) => {
+          const dateStr = o.tarikhAmbil || o.tarikhTempahan
+          if (!dateStr) return false
+          const date = new Date(dateStr)
+          return (date.getMonth() + 1).toString().padStart(2, '0') === selectedMonth
+        })
+      }
+      if (selectedYear) {
+        list = list.filter((o) => {
+          const dateStr = o.tarikhAmbil || o.tarikhTempahan
+          if (!dateStr) return false
+          const date = new Date(dateStr)
+          return date.getFullYear().toString() === selectedYear
+        })
+      }
+    }
+
+    if (!sortKey || !sortDirection) return list
+
+    return list.sort((a, b) => {
+      let valA, valB
+
+      switch (sortKey) {
+        case 'namaPelanggan':
+          valA = (a.namaPelanggan || '').toLowerCase()
+          valB = (b.namaPelanggan || '').toLowerCase()
+          break
+        case 'jumlahHarga':
+          valA = Number(a.jumlahHarga) || 0
+          valB = Number(b.jumlahHarga) || 0
+          break
+        case 'tarikhAmbil':
+          valA = a.tarikhAmbil ? new Date(a.tarikhAmbil).getTime() : 0
+          valB = b.tarikhAmbil ? new Date(b.tarikhAmbil).getTime() : 0
+          break
+        case 'kaedahPenghantaran':
+          valA = (a.kaedahPenghantaran || '').toLowerCase()
+          valB = (b.kaedahPenghantaran || '').toLowerCase()
+          break
+        case 'statusTempahan':
+          valA = (a.statusTempahan || '').toLowerCase()
+          valB = (b.statusTempahan || '').toLowerCase()
+          break
+        case 'statusBayaran':
+          valA = (a.statusBayaran || 'Belum Dibayar').toLowerCase()
+          valB = (b.statusBayaran || 'Belum Dibayar').toLowerCase()
+          break
+        default:
+          return 0
+      }
+
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1
+
+      // Fallback secondary sort by tempahanId descending
+      const idA = a.tempahanId || ''
+      const idB = b.tempahanId || ''
+      if (idA < idB) return 1
+      if (idA > idB) return -1
+      return 0
+    })
+  }
+
+  const sortedOrders = getFilteredAndSortedOrders()
+
+  // Helper to render sortable table header cell
+  const renderSortableHeader = (label, key) => {
+    const isSorted = sortKey === key
+    return (
+      <th
+        onClick={() => handleSort(key)}
+        className="text-left px-6 py-3 font-medium text-gray-600 cursor-pointer hover:bg-gray-100 hover:text-gray-900 transition-colors select-none group"
+      >
+        <div className="flex items-center gap-1">
+          <span>{label}</span>
+          <span className={`text-xs transition-opacity duration-200 ${isSorted ? 'opacity-100 text-orange-600' : 'opacity-0 group-hover:opacity-50'}`}>
+            {isSorted ? (sortDirection === 'asc' ? '▲' : '▼') : '▲'}
+          </span>
+        </div>
+      </th>
+    )
+  }
+
   return (
     <MerchantLayout title="Senarai Tempahan" subtitle="Urus semua tempahan pelanggan anda.">
       <SuccessMessage message={success} />
@@ -154,6 +266,52 @@ export default function OrderManagementPage() {
         ))}
       </div>
 
+      {/* Month/Year Filter (Selesai tab only) */}
+      {activeTab === 'selesai' && !loading && orders.length > 0 && (
+        <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex flex-wrap gap-4 items-center shadow-sm">
+          <span className="text-sm font-semibold text-gray-700">Tapis Tempahan Selesai:</span>
+          
+          {/* Month Select */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 font-medium">Bulan:</label>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              <option value="">Semua (Bulan)</option>
+              <option value="01">Januari</option>
+              <option value="02">Februari</option>
+              <option value="03">Mac</option>
+              <option value="04">April</option>
+              <option value="05">Mei</option>
+              <option value="06">Jun</option>
+              <option value="07">Julai</option>
+              <option value="08">Ogos</option>
+              <option value="09">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Disember</option>
+            </select>
+          </div>
+
+          {/* Year Select */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 font-medium">Tahun:</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+            >
+              <option value="">Semua (Tahun)</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       {loading ? (
         <LoadingSpinner />
@@ -161,24 +319,26 @@ export default function OrderManagementPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
           Tiada tempahan ditemui.
         </div>
+      ) : sortedOrders.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
+          Tiada tempahan ditemui untuk tapisan bulan/tahun ini.
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">ID / Nama Pelanggan</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Jumlah Bayaran</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Tarikh Diperlukan</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Kaedah</th>
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Status Tempahan</th>
-                {activeTab === 'selesai' && (
-                  <th className="text-left px-6 py-3 font-medium text-gray-600">Status Bayaran</th>
-                )}
-                <th className="text-left px-6 py-3 font-medium text-gray-600">Tindakan</th>
+                {renderSortableHeader('ID / Nama Pelanggan', 'namaPelanggan')}
+                {renderSortableHeader('Jumlah Bayaran', 'jumlahHarga')}
+                {renderSortableHeader('Tarikh Diperlukan', 'tarikhAmbil')}
+                {renderSortableHeader('Kaedah', 'kaedahPenghantaran')}
+                {renderSortableHeader('Status Tempahan', 'statusTempahan')}
+                {activeTab === 'selesai' && renderSortableHeader('Status Bayaran', 'statusBayaran')}
+                <th className="text-left px-6 py-3 font-medium text-gray-600 select-none">Tindakan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {orders.map((order) => (
+              {sortedOrders.map((order) => (
                 <tr key={order.tempahanId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <p className="font-medium text-gray-800">{order.namaPelanggan || '-'}</p>

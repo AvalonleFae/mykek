@@ -20,7 +20,7 @@ const STATUS_SEQUENCE = [
  */
 export async function getCustomerOrders(pelangganId) {
   const [rows] = await pool.execute(
-    `SELECT t.tempahanId, t.tarikhTempahan, t.statusTempahan, t.jumlahHarga, t.tarikhAmbil, t.kaedahPenghantaran, t.statusBayaran,
+    `SELECT t.tempahanId, t.tarikhTempahan, t.statusTempahan, t.jumlahHarga, t.tarikhAmbil, t.kaedahPenghantaran, t.statusBayaran, t.tarikhTerima,
             (SELECT urlImej FROM ImejTempahan WHERE tempahanId = t.tempahanId LIMIT 1) AS imejUrl
      FROM Tempahan t
      WHERE t.pelangganId = ?

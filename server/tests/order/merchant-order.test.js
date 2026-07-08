@@ -29,11 +29,12 @@ async function createMerchantAgent() {
 async function ensureCustomer(phone = '0191234567', name = 'Pelanggan Ujian') {
   const [rows] = await pool.execute('SELECT pelangganId FROM Pelanggan WHERE noTelefon = ?', [phone]);
   if (rows.length > 0) return rows[0].pelangganId;
-  const [result] = await pool.execute(
-    'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-    [phone, name]
+  const pelangganId = 'C' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  await pool.execute(
+    'INSERT INTO Pelanggan (pelangganId, noTelefon, nama) VALUES (?, ?, ?)',
+    [pelangganId, phone, name]
   );
-  return result.insertId;
+  return pelangganId;
 }
 
 /**
@@ -48,11 +49,13 @@ async function createTestOrder(pelangganId, overrides = {}) {
     statusBayaran: 'Belum Dibayar',
   };
   const data = { ...defaults, ...overrides };
+  const tempahanId = 'T' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
 
-  const [result] = await pool.execute(
-    `INSERT INTO Tempahan (pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, statusBayaran, tarikhTerima, nota, sebabTolak)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  await pool.execute(
+    `INSERT INTO Tempahan (tempahanId, pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, statusBayaran, tarikhTerima, nota, sebabTolak)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
+      tempahanId,
       pelangganId,
       data.tarikhAmbil,
       data.kaedahPenghantaran,
@@ -64,7 +67,7 @@ async function createTestOrder(pelangganId, overrides = {}) {
       data.sebabTolak || null,
     ]
   );
-  return result.insertId;
+  return tempahanId;
 }
 
 describe('Merchant Order Management Endpoints', () => {
@@ -176,7 +179,7 @@ describe('Merchant Order Management Endpoints', () => {
     it('should return 400 for invalid ID', async () => {
       const res = await merchantAgent.get('/api/peniaga/tempahan/abc');
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
       expect(res.body.ralat).toBe(true);
     });
   });
@@ -294,7 +297,7 @@ describe('Merchant Order Management Endpoints', () => {
 
   // --- PUT /api/peniaga/tempahan/:id/status ---
   describe('PUT /api/peniaga/tempahan/:id/status', () => {
-    it('should advance from Diterima to Sedang Diproses', async () => {
+    it('should advance from Diterima to Sedang Dibuat', async () => {
       const tempahanId = await createTestOrder(pelangganId, {
         statusTempahan: 'Diterima',
         tarikhTerima: new Date().toISOString().slice(0, 19).replace('T', ' '),
@@ -304,34 +307,23 @@ describe('Merchant Order Management Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.berjaya).toBe(true);
-      expect(res.body.statusBaru).toBe('Sedang Diproses');
+      expect(res.body.statusBaru).toBe('Sedang Dibuat');
     });
 
-    it('should advance from Sedang Diproses to Sedang Dihias', async () => {
+    it('should advance from Sedang Dibuat to Siap', async () => {
       const tempahanId = await createTestOrder(pelangganId, {
-        statusTempahan: 'Sedang Diproses',
+        statusTempahan: 'Sedang Dibuat',
       });
 
       const res = await merchantAgent.put(`/api/peniaga/tempahan/${tempahanId}/status`);
 
       expect(res.status).toBe(200);
-      expect(res.body.statusBaru).toBe('Sedang Dihias');
+      expect(res.body.statusBaru).toBe('Siap');
     });
 
-    it('should advance from Sedang Dihias to Sedia untuk Diambil/Dihantar', async () => {
+    it('should advance from Siap to Selesai', async () => {
       const tempahanId = await createTestOrder(pelangganId, {
-        statusTempahan: 'Sedang Dihias',
-      });
-
-      const res = await merchantAgent.put(`/api/peniaga/tempahan/${tempahanId}/status`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.statusBaru).toBe('Sedia untuk Diambil/Dihantar');
-    });
-
-    it('should advance from Sedia to Selesai', async () => {
-      const tempahanId = await createTestOrder(pelangganId, {
-        statusTempahan: 'Sedia untuk Diambil/Dihantar',
+        statusTempahan: 'Siap',
       });
 
       const res = await merchantAgent.put(`/api/peniaga/tempahan/${tempahanId}/status`);

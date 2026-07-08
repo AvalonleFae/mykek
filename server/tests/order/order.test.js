@@ -30,9 +30,10 @@ async function createCustomerAgent(phone = '0191234567', name = 'Pelanggan Ujian
   const agent = request.agent(app);
   const [customers] = await pool.execute('SELECT * FROM Pelanggan WHERE noTelefon = ?', [phone]);
   if (customers.length === 0) {
+    const tempId = 'C' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     await pool.execute(
-      'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-      [phone, name]
+      'INSERT INTO Pelanggan (pelangganId, noTelefon, nama) VALUES (?, ?, ?)',
+      [tempId, phone, name]
     );
   }
   await agent
@@ -61,11 +62,13 @@ async function createTestOrder(pelangganId, overrides = {}) {
     statusBayaran: 'Belum Dibayar',
   };
   const data = { ...defaults, ...overrides };
+  const tempahanId = 'T' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
 
-  const [result] = await pool.execute(
-    `INSERT INTO Tempahan (pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, statusBayaran, tarikhTerima, nota, sebabTolak)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  await pool.execute(
+    `INSERT INTO Tempahan (tempahanId, pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, statusBayaran, tarikhTerima, nota, sebabTolak)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
+      tempahanId,
       pelangganId,
       data.tarikhAmbil,
       data.kaedahPenghantaran,
@@ -77,7 +80,7 @@ async function createTestOrder(pelangganId, overrides = {}) {
       data.sebabTolak || null,
     ]
   );
-  return result.insertId;
+  return tempahanId;
 }
 
 describe('Customer Order Endpoints', () => {
@@ -113,15 +116,17 @@ describe('Customer Order Endpoints', () => {
 
     it('should return orders sorted by tarikhTempahan DESC', async () => {
       // Create orders with different dates
+      const tId1 = 'T' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+      const tId2 = 'T' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
       await pool.execute(
-        `INSERT INTO Tempahan (pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, tarikhTempahan)
-         VALUES (?, '2026-06-10', 'Ambil Sendiri', 30.00, 'Menunggu Pengesahan', '2025-01-01 10:00:00')`,
-        [pelangganId]
+        `INSERT INTO Tempahan (tempahanId, pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, tarikhTempahan)
+         VALUES (?, ?, '2026-06-10', 'Ambil Sendiri', 30.00, 'Menunggu Pengesahan', '2025-01-01 10:00:00')`,
+        [tId1, pelangganId]
       );
       await pool.execute(
-        `INSERT INTO Tempahan (pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, tarikhTempahan)
-         VALUES (?, '2026-06-15', 'Ambil Sendiri', 50.00, 'Diterima', '2025-01-05 10:00:00')`,
-        [pelangganId]
+        `INSERT INTO Tempahan (tempahanId, pelangganId, tarikhAmbil, kaedahPenghantaran, jumlahHarga, statusTempahan, tarikhTempahan)
+         VALUES (?, ?, '2026-06-15', 'Ambil Sendiri', 50.00, 'Diterima', '2025-01-05 10:00:00')`,
+        [tId2, pelangganId]
       );
 
       const res = await customerAgent.get('/api/pelanggan/tempahan');
@@ -141,11 +146,12 @@ describe('Customer Order Endpoints', () => {
       const [existing] = await pool.execute('SELECT pelangganId FROM Pelanggan WHERE noTelefon = ?', ['0187654321']);
       let otherPelangganId;
       if (existing.length === 0) {
-        const [result] = await pool.execute(
-          'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-          ['0187654321', 'Pelanggan Lain']
+        const otherId = 'C' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        await pool.execute(
+          'INSERT INTO Pelanggan (pelangganId, noTelefon, nama) VALUES (?, ?, ?)',
+          [otherId, '0187654321', 'Pelanggan Lain']
         );
-        otherPelangganId = result.insertId;
+        otherPelangganId = otherId;
       } else {
         otherPelangganId = existing[0].pelangganId;
       }
@@ -183,17 +189,19 @@ describe('Customer Order Endpoints', () => {
       );
 
       // Add order details
+      const bId = 'B' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
       await pool.execute(
-        `INSERT INTO ButiranTempahan (tempahanId, kategoriId, pilihanId, namaKategori, namaPilihan, hargaTambahan)
-         VALUES (?, 1, 1, 'Saiz', 'Besar', 20.00)`,
-        [tempahanId]
+        `INSERT INTO ButiranTempahan (butiranId, tempahanId, kategoriId, pilihanId, namaKategori, namaPilihan, hargaTambahan)
+         VALUES (?, ?, 1, 1, 'Saiz', 'Besar', 20.00)`,
+        [bId, tempahanId]
       );
 
       // Add order image
+      const iId = 'I' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
       await pool.execute(
-        `INSERT INTO ImejTempahan (tempahanId, jenisImej, urlImej, promptAI)
-         VALUES (?, 'AI', '/uploads/images/test.png', 'Kek coklat')`,
-        [tempahanId]
+        `INSERT INTO ImejTempahan (imejId, tempahanId, jenisImej, urlImej, promptAI)
+         VALUES (?, ?, 'AI', '/uploads/images/test.png', 'Kek coklat')`,
+        [iId, tempahanId]
       );
 
       const res = await customerAgent.get(`/api/pelanggan/tempahan/${tempahanId}`);
@@ -212,11 +220,12 @@ describe('Customer Order Endpoints', () => {
       const [existing] = await pool.execute('SELECT pelangganId FROM Pelanggan WHERE noTelefon = ?', ['0187654321']);
       let otherPelangganId;
       if (existing.length === 0) {
-        const [result] = await pool.execute(
-          'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-          ['0187654321', 'Pelanggan Lain']
+        const otherId = 'C' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        await pool.execute(
+          'INSERT INTO Pelanggan (pelangganId, noTelefon, nama) VALUES (?, ?, ?)',
+          [otherId, '0187654321', 'Pelanggan Lain']
         );
-        otherPelangganId = result.insertId;
+        otherPelangganId = otherId;
       } else {
         otherPelangganId = existing[0].pelangganId;
       }
@@ -238,7 +247,7 @@ describe('Customer Order Endpoints', () => {
     it('should return 400 for invalid ID', async () => {
       const res = await customerAgent.get('/api/pelanggan/tempahan/abc');
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(404);
       expect(res.body.ralat).toBe(true);
     });
   });
@@ -331,11 +340,12 @@ describe('Customer Order Endpoints', () => {
       const [existing] = await pool.execute('SELECT pelangganId FROM Pelanggan WHERE noTelefon = ?', ['0187654321']);
       let otherPelangganId;
       if (existing.length === 0) {
-        const [result] = await pool.execute(
-          'INSERT INTO Pelanggan (noTelefon, nama) VALUES (?, ?)',
-          ['0187654321', 'Pelanggan Lain']
+        const otherId = 'C' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        await pool.execute(
+          'INSERT INTO Pelanggan (pelangganId, noTelefon, nama) VALUES (?, ?, ?)',
+          [otherId, '0187654321', 'Pelanggan Lain']
         );
-        otherPelangganId = result.insertId;
+        otherPelangganId = otherId;
       } else {
         otherPelangganId = existing[0].pelangganId;
       }

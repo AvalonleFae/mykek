@@ -69,22 +69,44 @@ export default function CalendarPage() {
 
     try {
       if (formStatus === 'tutup') {
-        // Add closed dates for the range
         const start = new Date(formMula)
         const end = formHingga ? new Date(formHingga) : start
-        let added = 0
 
+        // 1. Validate past dates client-side
+        const todayLocal = new Date()
+        todayLocal.setHours(0, 0, 0, 0)
+        const startDateObj = new Date(formMula + 'T00:00:00')
+        if (startDateObj < todayLocal) {
+          setError('Hanya tarikh hari ini atau masa hadapan boleh ditanda sebagai tidak tersedia.')
+          setActionLoading(false)
+          return
+        }
+
+        // 2. Validate already closed dates in the range
+        let hasClosed = false
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-          try {
-            await api.post('/api/peniaga/tarikh-tutup', {
-              tarikh: dateStr,
-              catatan: formSebab.trim() || null,
-            })
-            added++
-          } catch {
-            // Skip dates that are already closed or invalid
+          if (isDateClosed(dateStr)) {
+            hasClosed = true
+            break
           }
+        }
+
+        if (hasClosed) {
+          setError('Tarikh yang dipilih telah pun ditutup.')
+          setActionLoading(false)
+          return
+        }
+
+        // Add closed dates for the range
+        let added = 0
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          await api.post('/api/peniaga/tarikh-tutup', {
+            tarikh: dateStr,
+            catatan: formSebab.trim() || null,
+          })
+          added++
         }
         setSuccess(`${added} tarikh tutup berjaya ditambah.`)
       } else {

@@ -26,6 +26,7 @@ export default function OrderFormPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [dateError, setDateError] = useState('')
   const [categories, setCategories] = useState([])
   const [closedDates, setClosedDates] = useState([])
   const [generatingImage, setGeneratingImage] = useState(false)
@@ -100,7 +101,14 @@ export default function OrderFormPage() {
     return d.toISOString().split('T')[0]
   }
 
-  const isDateClosed = (dateStr) => closedDates.some((d) => (d.tarikh || '').split('T')[0] === dateStr)
+  const isDateClosed = (dateStr) => closedDates.some((d) => {
+    if (!d.tarikh) return false
+    const dateObj = new Date(d.tarikh)
+    const y = dateObj.getFullYear()
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const dayObj = String(dateObj.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dayObj}` === dateStr
+  })
 
   const handleGenerateAI = async () => {
     if (form.aiPrompt.length < 10 || form.aiPrompt.length > 500) {
@@ -140,15 +148,16 @@ export default function OrderFormPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setDateError('')
     const requiredCats = categories.filter((c) => (c.pilihan || []).length > 0)
     for (const cat of requiredCats) {
       if (!form.selections[cat.kategoriId || cat.id]) {
         setError(`Sila pilih pilihan untuk "${cat.nama}".`); return
       }
     }
-    if (!form.tarikhAmbil) { setError('Sila pilih tarikh ambil/penghantaran.'); return }
-    if (form.tarikhAmbil < getMinDate()) { setError('Tarikh mestilah sekurang-kurangnya 2 hari dari hari ini.'); return }
-    if (isDateClosed(form.tarikhAmbil)) { setError('Tarikh yang dipilih adalah hari tutup.'); return }
+    if (!form.tarikhAmbil) { setDateError('Sila pilih tarikh ambil/penghantaran.'); return }
+    if (form.tarikhAmbil < getMinDate()) { setDateError('Tarikh mestilah sekurang-kurangnya 2 hari dari hari ini.'); return }
+    if (isDateClosed(form.tarikhAmbil)) { setDateError('Tarikh yang dipilih adalah hari tutup.'); return }
     // For delivery: use typed address, or fall back to profile address
     if (form.kaedahPenghantaran === 'delivery' && !form.alamatPenghantaran.trim() && !profileAddress) {
       setError('Sila masukkan alamat penghantaran atau kemaskini alamat di profil anda.'); return
@@ -179,6 +188,7 @@ export default function OrderFormPage() {
           uploadedFile: form.uploadedFile || null,
           aiImageUrl: form.aiImageUrl || null,
           aiPrompt: form.aiPrompt || null,
+          totalPrice: total,
         }
       })
     } catch (err) {
@@ -342,12 +352,23 @@ export default function OrderFormPage() {
                       min={getMinDate()}
                       onChange={(e) => {
                         const val = e.target.value
-                        if (isDateClosed(val)) setError('Tarikh tutup. Pilih tarikh lain.')
-                        else { setError(''); setForm((prev) => ({ ...prev, tarikhAmbil: val })) }
+                        setForm((prev) => ({ ...prev, tarikhAmbil: val }))
+                        if (isDateClosed(val)) {
+                          setDateError('Tarikh yang dipilih adalah hari tutup.')
+                        } else if (val < getMinDate()) {
+                          setDateError('Tarikh mestilah sekurang-kurangnya 2 hari dari hari ini.')
+                        } else {
+                          setDateError('')
+                        }
                       }}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+                        dateError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-orange-400'
+                      }`}
                       required
                     />
+                    {dateError && (
+                      <p className="text-xs text-red-500 mt-1.5 font-medium">{dateError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Kaedah</label>
@@ -365,7 +386,7 @@ export default function OrderFormPage() {
                 {/* Closed dates warning */}
                 {closedDates.length > 0 && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-xs font-semibold text-red-600 mb-1">⚠️ Tarikh Tidak Tersedia:</p>
+                    <p className="text-xs font-semibold text-red-600 mb-1">⚠️ Tarikh Kedai Tutup:</p>
                     <div className="flex flex-wrap gap-1.5">
                       {closedDates.map((d, idx) => {
                         const dateObj = new Date(d.tarikh)

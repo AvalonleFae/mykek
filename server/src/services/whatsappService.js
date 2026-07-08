@@ -205,12 +205,12 @@ export async function initialize() {
  */
 export async function resetConnection() {
   console.log('[WhatsApp] Menetapkan semula sambungan WhatsApp...');
-  
+
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
-  
+
   if (client) {
     try {
       await client.destroy();
@@ -226,7 +226,7 @@ export async function resetConnection() {
     try {
       fs.rmSync(sessionPath, { recursive: true, force: true });
       console.log('[WhatsApp] Folder sesi berjaya dipadam.');
-      
+
       // Delay slightly to ensure folder is completely released/deleted
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (err) {
@@ -316,12 +316,7 @@ export async function sendMessage(phoneNumber, message) {
     return { sent: false, queued: true };
   }
 
-  // Strategy: Resolve the number's real WID (which may be a LID in multi-device)
-  // via WAWebQueryExistsJob.queryWidExists(), then use the resolved WID to
-  // find/create the chat and send through WAWebSendMsgChatAction.
-  // This is necessary because client.sendMessage() uses @c.us WID directly,
-  // which creates a local chat but fails to deliver messages to recipients
-  // whose internal routing requires a LID in WhatsApp's multi-device architecture.
+
   const pupPage = client.pupPage;
   if (pupPage) {
     try {
@@ -329,11 +324,10 @@ export async function sendMessage(phoneNumber, message) {
 
       const sendResult = await pupPage.evaluate(async (chatId, msgContent) => {
         try {
-          // Step 1: Create WID from the @c.us phone number
+
           const originalWid = window.require('WAWebWidFactory').createWid(chatId);
 
-          // Step 2: Query WhatsApp servers to get the REAL WID for this number
-          // This resolves @c.us to the actual @lid if the number uses multi-device
+
           let resolvedWid = originalWid;
           try {
             const existsResult = await window
@@ -343,15 +337,15 @@ export async function sendMessage(phoneNumber, message) {
               resolvedWid = existsResult.wid;
             }
           } catch (e) {
-            // If query fails, continue with original WID
+
           }
 
           const resolvedId = resolvedWid._serialized || resolvedWid.toString();
 
-          // Step 3: Find or create the chat using the RESOLVED WID
+
           let chat = window.require('WAWebCollections').Chat.get(resolvedWid);
           if (!chat) {
-            // Also try with original WID
+
             chat = window.require('WAWebCollections').Chat.get(originalWid);
           }
           if (!chat) {
@@ -371,7 +365,7 @@ export async function sendMessage(phoneNumber, message) {
             return { ok: false, error: 'Chat could not be found or created', resolvedId };
           }
 
-          // Step 4: Build and send the message using internal APIs
+          //Build and send the message using internal APIs
           const { getMaybeMeLidUser, getMaybeMePnUser } = window.require(
             'WAWebUserPrefsMeUser'
           );
@@ -405,7 +399,7 @@ export async function sendMessage(phoneNumber, message) {
             ...ephemeralFields,
           };
 
-          // Step 5: Add and send the message through the internal action
+          //Add and send the message through the internal action
           const [msgPromise] = window
             .require('WAWebSendMsgChatAction')
             .addAndSendMsgToChat(chat, msgPayload);

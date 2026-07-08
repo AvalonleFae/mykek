@@ -8,12 +8,17 @@ import ConfirmDialog from '../../components/shared/ConfirmDialog'
 import api from '../../services/api'
 
 const STATUS_COLORS = {
-  'Menunggu Bayaran': 'bg-yellow-100 text-yellow-700',
-  'Dalam Proses': 'bg-blue-100 text-blue-700',
-  'Sedang Dibakar': 'bg-orange-100 text-orange-700',
-  'Sedia Diambil': 'bg-green-100 text-green-700',
-  'Selesai': 'bg-green-100 text-green-700',
-  'Dibatalkan': 'bg-red-100 text-red-700',
+  'Menunggu Pengesahan': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  'Menunggu Bayaran': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  'Diterima': 'bg-blue-100 text-blue-700 border-blue-300',
+  'Dalam Proses': 'bg-blue-100 text-blue-700 border-blue-300',
+  'Sedang Dibuat': 'bg-indigo-100 text-indigo-700 border-indigo-300',
+  'Sedang Dibakar': 'bg-orange-100 text-orange-700 border-orange-300',
+  'Siap': 'bg-green-100 text-green-700 border-green-300',
+  'Sedia Diambil': 'bg-green-100 text-green-700 border-green-300',
+  'Selesai': 'bg-green-100 text-green-700 border-green-300',
+  'Dibatalkan': 'bg-red-100 text-red-700 border-red-300',
+  'Ditolak': 'bg-red-100 text-red-700 border-red-300',
 }
 
 export default function OrderDetailPage() {
@@ -43,9 +48,15 @@ export default function OrderDetailPage() {
 
   const canCancel = () => {
     if (!order) return false
-    const status = order.status || ''
-    // Can cancel if status is pending payment or in process
-    return ['Menunggu Bayaran', 'Dalam Proses'].includes(status)
+    const status = order.statusTempahan || order.status || ''
+    if (['Menunggu Pengesahan', 'Menunggu Bayaran'].includes(status)) return true
+
+    const tarikhTerima = order.tarikhTerima || order.acceptedAt
+    if (['Diterima', 'Dalam Proses'].includes(status) && tarikhTerima) {
+      const diff = Date.now() - new Date(tarikhTerima).getTime()
+      return diff <= 24 * 60 * 60 * 1000
+    }
+    return false
   }
 
   const handleCancel = async () => {
@@ -55,7 +66,7 @@ export default function OrderDetailPage() {
     try {
       await api.put(`/api/pelanggan/tempahan/${id}/batal`)
       setSuccess('Tempahan berjaya dibatalkan.')
-      setOrder((prev) => (prev ? { ...prev, status: 'Dibatalkan' } : prev))
+      setOrder((prev) => (prev ? { ...prev, status: 'Dibatalkan', statusTempahan: 'Dibatalkan' } : prev))
     } catch (err) {
       setError(err.response?.data?.mesej || 'Gagal membatalkan tempahan.')
     } finally {
@@ -106,8 +117,8 @@ export default function OrderDetailPage() {
                       {formatDate(order.tarikhTempahan || order.createdAt)}
                     </p>
                   </div>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
-                    {order.status || 'Tidak Diketahui'}
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${STATUS_COLORS[order.statusTempahan || order.status] || 'bg-gray-100 text-gray-700'}`}>
+                    {order.statusTempahan || order.status || 'Tidak Diketahui'}
                   </span>
                 </div>
 

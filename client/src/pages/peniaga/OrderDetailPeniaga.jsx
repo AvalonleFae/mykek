@@ -24,7 +24,6 @@ const STATUS_LABELS = [
 
 const PAYMENT_STATUSES = [
   'Belum Dibayar',
-  'Deposit Dibayar',
   'Telah Dibayar',
 ]
 
