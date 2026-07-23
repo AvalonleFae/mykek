@@ -186,7 +186,6 @@ export default function CalendarPage() {
       const dateB = formatDateInKL(b.tarikh)
       return dateA.localeCompare(dateB)
     })
-    .slice(0, 5)
 
   return (
     <MerchantLayout title="Kalendar Cuti" subtitle="Tetapkan tarikh kedai tidak beroperasi.">
@@ -327,7 +326,7 @@ export default function CalendarPage() {
               {upcomingClosed.length === 0 ? (
                 <p className="text-xs text-gray-400">Tiada cuti yang dijadualkan.</p>
               ) : (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                   {upcomingClosed.map((cd) => {
                     const formatted = formatDateInKL(cd.tarikh)
                     if (!formatted) return null
