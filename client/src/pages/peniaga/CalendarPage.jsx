@@ -48,10 +48,25 @@ export default function CalendarPage() {
   const formatDateStr = (year, month, day) =>
     `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
+  const formatDateInKL = (dateVal) => {
+    if (!dateVal) return ''
+    try {
+      const d = new Date(dateVal)
+      if (isNaN(d.getTime())) return ''
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kuala_Lumpur',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d)
+    } catch {
+      return ''
+    }
+  }
+
   const isDateClosed = (dateStr) => {
     return closedDates.some((d) => {
-      const dDate = new Date(d.tarikh)
-      const formatted = `${dDate.getFullYear()}-${String(dDate.getMonth() + 1).padStart(2, '0')}-${String(dDate.getDate()).padStart(2, '0')}`
+      const formatted = formatDateInKL(d.tarikh)
       return formatted === dateStr
     })
   }
@@ -69,14 +84,15 @@ export default function CalendarPage() {
 
     try {
       if (formStatus === 'tutup') {
-        const start = new Date(formMula)
-        const end = formHingga ? new Date(formHingga) : start
+        // Parse as local noon to avoid any midnight timezone shifts during day-by-day addition
+        const startLocal = new Date(formMula + 'T12:00:00')
+        const endLocal = formHingga ? new Date(formHingga + 'T12:00:00') : startLocal
 
         // 1. Validate past dates client-side
         const todayLocal = new Date()
         todayLocal.setHours(0, 0, 0, 0)
-        const startDateObj = new Date(formMula + 'T00:00:00')
-        if (startDateObj < todayLocal) {
+        const todayLocalStr = formatDateInKL(todayLocal)
+        if (formMula < todayLocalStr) {
           setError('Hanya tarikh hari ini atau masa hadapan boleh ditanda sebagai tidak tersedia.')
           setActionLoading(false)
           return
@@ -84,8 +100,8 @@ export default function CalendarPage() {
 
         // 2. Validate already closed dates in the range
         let hasClosed = false
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        for (let d = new Date(startLocal); d <= endLocal; d.setDate(d.getDate() + 1)) {
+          const dateStr = formatDateInKL(d)
           if (isDateClosed(dateStr)) {
             hasClosed = true
             break
@@ -100,8 +116,8 @@ export default function CalendarPage() {
 
         // Add closed dates for the range
         let added = 0
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        for (let d = new Date(startLocal); d <= endLocal; d.setDate(d.getDate() + 1)) {
+          const dateStr = formatDateInKL(d)
           await api.post('/api/peniaga/tarikh-tutup', {
             tarikh: dateStr,
             catatan: formSebab.trim() || null,
@@ -111,15 +127,14 @@ export default function CalendarPage() {
         setSuccess(`${added} tarikh tutup berjaya ditambah.`)
       } else {
         // Remove closed dates in the range
-        const start = new Date(formMula)
-        const end = formHingga ? new Date(formHingga) : start
+        const startLocal = new Date(formMula + 'T12:00:00')
+        const endLocal = formHingga ? new Date(formHingga + 'T12:00:00') : startLocal
         let removed = 0
 
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        for (let d = new Date(startLocal); d <= endLocal; d.setDate(d.getDate() + 1)) {
+          const dateStr = formatDateInKL(d)
           const entry = closedDates.find((cd) => {
-            const cdDate = new Date(cd.tarikh)
-            const cdStr = `${cdDate.getFullYear()}-${String(cdDate.getMonth() + 1).padStart(2, '0')}-${String(cdDate.getDate()).padStart(2, '0')}`
+            const cdStr = formatDateInKL(cd.tarikh)
             return cdStr === dateStr
           })
           if (entry) {
@@ -160,9 +175,17 @@ export default function CalendarPage() {
   for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d)
 
   // Get upcoming closed dates
+  const todayStr = formatDateInKL(today)
   const upcomingClosed = closedDates
-    .filter((d) => new Date(d.tarikh) >= new Date(today.toDateString()))
-    .sort((a, b) => new Date(a.tarikh) - new Date(b.tarikh))
+    .filter((d) => {
+      const formatted = formatDateInKL(d.tarikh)
+      return formatted && formatted >= todayStr
+    })
+    .sort((a, b) => {
+      const dateA = formatDateInKL(a.tarikh)
+      const dateB = formatDateInKL(b.tarikh)
+      return dateA.localeCompare(dateB)
+    })
     .slice(0, 5)
 
   return (
@@ -306,8 +329,13 @@ export default function CalendarPage() {
               ) : (
                 <div className="space-y-1.5">
                   {upcomingClosed.map((cd) => {
-                    const d = new Date(cd.tarikh)
-                    const dateLabel = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
+                    const formatted = formatDateInKL(cd.tarikh)
+                    if (!formatted) return null
+                    const parts = formatted.split('-')
+                    const year = parts[0]
+                    const monthIdx = parseInt(parts[1], 10) - 1
+                    const day = parseInt(parts[2], 10)
+                    const dateLabel = `${day} ${MONTHS[monthIdx]} ${year}`
                     return (
                       <div key={cd.tarikhTutupId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                         <div>
