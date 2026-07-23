@@ -326,7 +326,7 @@ export default function CalendarPage() {
               {upcomingClosed.length === 0 ? (
                 <p className="text-xs text-gray-400">Tiada cuti yang dijadualkan.</p>
               ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
                   {upcomingClosed.map((cd) => {
                     const formatted = formatDateInKL(cd.tarikh)
                     if (!formatted) return null
@@ -336,7 +336,7 @@ export default function CalendarPage() {
                     const day = parseInt(parts[2], 10)
                     const dateLabel = `${day} ${MONTHS[monthIdx]} ${year}`
                     return (
-                      <div key={cd.tarikhTutupId} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <div key={cd.tarikhTutupId || formatted} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                         <div>
                           <p className="text-xs font-medium text-gray-700">{dateLabel}</p>
                           {cd.catatan && <p className="text-xs text-gray-500">{cd.catatan}</p>}
