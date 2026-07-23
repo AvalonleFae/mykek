@@ -126,19 +126,9 @@ function ChatWidgetInner({ formState, categories, onFormAction }) {
         sender: 'bot',
         content: response.balasan,
         timestamp: new Date(),
-        suggestions: response.cadangan || null,
+        suggestions: null,
       }
       addMessage(botMessage)
-
-      // Apply form actions if present (can be single object or array)
-      if (response.tindakan && onFormAction) {
-        const actions = Array.isArray(response.tindakan) ? response.tindakan : [response.tindakan]
-        actions.forEach(action => {
-          if (action && action.jenis === 'pilih_opsyen') {
-            onFormAction(action)
-          }
-        })
-      }
     } catch (error) {
       let errorMessage = 'Maaf, pembantu pesanan tidak tersedia buat masa ini. Sila cuba lagi sebentar.'
 

@@ -47,8 +47,8 @@ export function validateResponse(aiResponse, spesifikasiKek = []) {
 
   // Extract fields from parsed JSON
   let balasan = parsed.balasan || parsed.reply || ''
-  let cadangan = parsed.cadangan || null
-  let tindakan = parsed.tindakan || null
+  let cadangan = null
+  let tindakan = null
 
   // Enforce 300-word max on balasan
   balasan = truncateToMaxWords(balasan)

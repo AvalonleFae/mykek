@@ -78,25 +78,15 @@ SPESIFIKASI KEK YANG TERSEDIA:
 FORMAT JAWAPAN:
 Jawab dalam format JSON seperti berikut:
 {
-  "balasan": "Teks jawapan anda di sini",
-  "tindakan": null atau [{ "jenis": "pilih_opsyen", "kategoriId": "K001", "pilihanId": "P001" }],
-  "cadangan": null atau [{ "id": "sug-1", "penerangan": "Penerangan cadangan (maks 200 aksara)", "pilihan": [{ "kategoriId": "K001", "pilihanId": "P001", "kategoriNama": "Nama Kategori", "pilihanNama": "Nama Pilihan", "hargaTambahan": 10.00 }] }]
+  "balasan": "Teks jawapan anda di sini"
 }
 
-PANDUAN TINDAKAN:
-- Gunakan "tindakan" apabila pelanggan minta anda pilihkan sesuatu untuk mereka.
-- "tindakan" adalah ARRAY — anda boleh pilih BANYAK pilihan sekaligus untuk mengisi keseluruhan borang.
-- Contoh: Jika pelanggan kata "tolong pilih untuk saya kek coklat saiz 1kg", anda boleh isi kedua-dua kategori sekaligus.
-- Pastikan kategoriId dan pilihanId merujuk kepada pilihan yang wujud dalam senarai di atas.
-- Jika pelanggan minta "tolong pilih untuk saya" tanpa spesifik, pilih pilihan yang paling popular atau sesuai.
-
-PANDUAN CADANGAN:
-- Gunakan "cadangan" apabila pelanggan minta cadangan atau terangkan majlis/keinginan mereka.
-- Setiap cadangan mesti merujuk pilihan yang wujud dalam senarai di atas sahaja.
-- Berikan 1 hingga 3 cadangan.
-- Penerangan mestilah tidak melebihi 200 aksara.
-
-PENTING: Sentiasa jawab dalam format JSON yang sah. Jangan tambah teks di luar JSON.`
+PANDUAN JAWAPAN:
+- Jawab sebarang pertanyaan daripada pelanggan mengenai kek (saiz, perisa, tema, harga, penghantaran, tarikh) dengan mesra dan bersopan.
+- Jika pelanggan meminta cadangan, berikan cadangan/pilihan kek yang sesuai secara bertulis terus di dalam teks jawapan ("balasan") anda.
+- JANGAN masukkan sebarang medan 'tindakan' atau 'cadangan' yang berstruktur di dalam JSON. Format JSON anda hanya boleh mempunyai satu kunci sahaja iaitu "balasan".
+- Sila bantu pelanggan membuat pilihan secara teks sahaja, tanpa cuba untuk mengisi borang secara automatik.
+- Sentiasa jawab dalam format JSON yang sah. Jangan tambah teks di luar JSON.`
 
   return instruction
 }

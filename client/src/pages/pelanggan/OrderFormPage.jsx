@@ -199,7 +199,7 @@ export default function OrderFormPage() {
   }
 
   const handleChatbotFormAction = (action) => {
-    if (action?.jenis === 'pilih_opsyen') handleSelectionChange(action.kategoriId, action.pilihanId)
+    // Chatbot auto-fill has been disabled
   }
 
   const total = calculateTotal()

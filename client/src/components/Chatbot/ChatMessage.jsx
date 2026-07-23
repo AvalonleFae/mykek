@@ -15,19 +15,6 @@ export default function ChatMessage({ message, onFormAction }) {
         >
           {message.content}
         </div>
-
-        {/* Render suggestions if present */}
-        {message.suggestions && message.suggestions.length > 0 && (
-          <div className="space-y-2">
-            {message.suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.id}
-                suggestion={suggestion}
-                onApply={onFormAction}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )
